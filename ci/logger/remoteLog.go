@@ -70,6 +70,7 @@ func (r *remoteLogger) run() {
 				if err != nil {
 					continue
 				}
+				resp.Body.Close()
 				loc := resp.Header.Get("Location")
 				if loc == "" {
 					continue
