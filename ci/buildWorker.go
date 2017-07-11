@@ -36,11 +36,11 @@ func (worker *buildWorker) start() {
 				continue
 			}
 			for _, subport := range subports {
+				statusString := "success"
 				DeactivateAllPorts()
 				portTmpDir := path.Join(worker.session.tmpDir, subport)
 				logFilename := path.Join(worker.session.tmpDir, "port-"+subport+"-dep-install.log")
 				err := mpbbToLog("install-dependencies", subport, portTmpDir, logFilename)
-				statusString := "success"
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
 						if !eerr.Success() {
@@ -63,7 +63,6 @@ func (worker *buildWorker) start() {
 
 				logFilename = path.Join(worker.session.tmpDir, "port-"+subport+"-install.log")
 				err = mpbbToLog("install-port", subport, portTmpDir, logFilename)
-				statusString = "success"
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
 						if !eerr.Success() {
