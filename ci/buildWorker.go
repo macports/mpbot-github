@@ -62,7 +62,7 @@ func (worker *buildWorker) start() {
 				}
 
 				logFilename = path.Join(worker.session.tmpDir, "port-"+subport+"-install.log")
-				mpbbToLog("install-port", subport, portTmpDir, logFilename)
+				err = mpbbToLog("install-port", subport, portTmpDir, logFilename)
 				statusString = "success"
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
