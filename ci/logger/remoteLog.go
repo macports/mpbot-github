@@ -43,44 +43,51 @@ func (r *remoteLogger) run() {
 				r.parent.LogTextChan <- &LogText{FieldName: "", Text: nil}
 				return
 			}
-			for i := 1; i < 3; i++ {
-				fileInfo, err := os.Stat(logBigFile.Filename)
-				if err != nil {
-					// TODO: print err in log
+			fileInfo, err := os.Stat(logBigFile.Filename)
+			if err == nil {
+				for i := 1; i < 3; i++ {
+					file, iErr := os.Open(logBigFile.Filename)
+					if iErr != nil {
+						err = iErr
+						break
+					}
+					buf := new(bytes.Buffer)
+					mimeWriter := multipart.NewWriter(buf)
+					writer, iErr := mimeWriter.CreateFormField("paste")
+					if iErr != nil {
+						err = iErr
+						break
+					}
+					// Max 8 MiB
+					if fileSize := fileInfo.Size(); fileSize > 8*1024*1024 {
+						file.Seek(fileSize-8*1024*1024, 0)
+					}
+					io.Copy(writer, file)
+					file.Close()
+					mimeWriter.Close()
+					resp, iErr := r.httpClient.Post(pasteURL.String(), mimeWriter.FormDataContentType(), buf)
+					if iErr != nil {
+						err = iErr
+						continue
+					}
+					resp.Body.Close()
+					loc := resp.Header.Get("Location")
+					if loc == "" {
+						err = iErr
+						continue
+					}
+					u, iErr := pasteURL.Parse(loc)
+					if iErr != nil {
+						err = iErr
+						break
+					}
+					GlobalLogger.LogTextChan <- &LogText{logBigFile.FieldName + "-pastebin", []byte(u.String())}
+					err = nil
 					break
 				}
-				file, err := os.Open(logBigFile.Filename)
-				if err != nil {
-					break
-				}
-				buf := new(bytes.Buffer)
-				mimeWriter := multipart.NewWriter(buf)
-				writer, err := mimeWriter.CreateFormField("paste")
-				if err != nil {
-					break
-				}
-				// Max 8 MiB
-				if fileSize := fileInfo.Size(); fileSize > 8*1024*1024 {
-					file.Seek(fileSize-8*1024*1024, 0)
-				}
-				io.Copy(writer, file)
-				file.Close()
-				mimeWriter.Close()
-				resp, err := r.httpClient.Post(pasteURL.String(), mimeWriter.FormDataContentType(), buf)
-				if err != nil {
-					continue
-				}
-				resp.Body.Close()
-				loc := resp.Header.Get("Location")
-				if loc == "" {
-					continue
-				}
-				u, err := pasteURL.Parse(loc)
-				if err != nil {
-					break
-				}
-				GlobalLogger.LogTextChan <- &LogText{logBigFile.FieldName + "-pastebin", []byte(u.String())}
-				break
+			}
+			if err != nil {
+				GlobalLogger.LogTextChan <- &LogText{logBigFile.FieldName + "-pastebin-fail", []byte(err.Error())}
 			}
 		}
 	}
