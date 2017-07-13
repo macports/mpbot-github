@@ -81,13 +81,19 @@ func (r *remoteLogger) run() {
 						err = iErr
 						break
 					}
-					GlobalLogger.LogTextChan <- &LogText{logBigFile.FieldName + "-pastebin", []byte(u.String())}
+					GlobalLogger.LogTextChan <- &LogText{
+						logBigFile.FieldName + "-pastebin",
+						[]byte(u.String()),
+					}
 					err = nil
 					break
 				}
 			}
 			if err != nil {
-				GlobalLogger.LogTextChan <- &LogText{logBigFile.FieldName + "-pastebin-fail", []byte(err.Error())}
+				GlobalLogger.LogTextChan <- &LogText{
+					logBigFile.FieldName + "-pastebin-fail",
+					[]byte(err.Error()),
+				}
 			}
 		}
 	}
