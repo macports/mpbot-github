@@ -48,6 +48,14 @@ func (receiver *Receiver) Start() {
 			return
 		}
 
+		switch r.Header.Get("X-GitHub-Event") {
+		case "":
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		case "pull_request":
+			go handlePullRequest(body)
+		}
+
 		w.WriteHeader(http.StatusNoContent)
 	})
 
