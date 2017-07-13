@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"github.com/macports/mpbot-github/pr/webhook"
 	"log"
 	"os"
+
+	"github.com/macports/mpbot-github/pr/webhook"
 )
 
 // Entry point of the PR bot
