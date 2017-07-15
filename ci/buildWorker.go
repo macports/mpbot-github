@@ -32,7 +32,7 @@ func (worker *buildWorker) start() {
 			subports, err := ListSubports(port)
 			if err != nil {
 				returnCode = 1
-				logger.GlobalLogger.LogTextChan <- &logger.LogText{"port-" + port + "-subports-fail", []byte(err.Error())}
+				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-subports-fail", []byte(err.Error())}
 				continue
 			}
 			for _, subport := range subports {
@@ -49,14 +49,15 @@ func (worker *buildWorker) start() {
 						}
 					}
 				}
-				logger.GlobalLogger.LogFileChan <- &logger.LogFile{
-					"port-" + subport + "-dep-summary-" + statusString,
-					path.Join(portTmpDir, "logs/dependencies-progress.txt"),
+				logger.GlobalLogger.LogChan <- &logger.LogFile{
+					FieldName: "port-" + subport + "-dep-summary-" + statusString,
+					Filename:  path.Join(portTmpDir, "logs/dependencies-progress.txt"),
 				}
 				if err != nil {
-					logger.GlobalLogger.LogBigFileChan <- &logger.LogFile{
-						"port-" + port + "-dep-install-output-" + statusString,
-						logFilename,
+					logger.GlobalLogger.LogChan <- &logger.LogFile{
+						FieldName: "port-" + port + "-dep-install-output-" + statusString,
+						Filename:  logFilename,
+						Big:       true,
 					}
 					continue
 				}
@@ -71,13 +72,14 @@ func (worker *buildWorker) start() {
 						}
 					}
 				}
-				logger.GlobalLogger.LogFileChan <- &logger.LogFile{
-					"port-" + subport + "-install-summary-" + statusString,
-					path.Join(portTmpDir, "logs/ports-progress.txt"),
+				logger.GlobalLogger.LogChan <- &logger.LogFile{
+					FieldName: "port-" + subport + "-install-summary-" + statusString,
+					Filename:  path.Join(portTmpDir, "logs/ports-progress.txt"),
 				}
-				logger.GlobalLogger.LogBigFileChan <- &logger.LogFile{
-					"port-" + port + "-install-output-" + statusString,
-					logFilename,
+				logger.GlobalLogger.LogChan <- &logger.LogFile{
+					FieldName: "port-" + port + "-install-output-" + statusString,
+					Filename:  logFilename,
+					Big:       true,
 				}
 			}
 		}

@@ -15,7 +15,7 @@ func main() {
 	}
 	err = session.Run()
 	// Signal the logger to exit
-	logger.GlobalLogger.LogTextChan <- nil
+	logger.GlobalLogger.LogChan <- nil
 	logger.GlobalLogger.Wait()
 	if err != nil {
 		log.Fatal(err)

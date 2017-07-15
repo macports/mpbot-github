@@ -42,7 +42,7 @@ func NewSession() (*Session, error) {
 // Run() blocks until all ports are tested and all logs are printed
 // or queued in the GlobalLogger.
 func (session *Session) Run() error {
-	logger.GlobalLogger.LogTextChan <- &logger.LogText{"port-list", []byte(strings.Join(session.ports, "\n"))}
+	logger.GlobalLogger.LogChan <- &logger.LogText{"port-list", []byte(strings.Join(session.ports, "\n"))}
 	if len(session.ports) == 0 {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (session *Session) Run() error {
 			statusString = "fail"
 			err = errors.New("lint failed")
 		}
-		logger.GlobalLogger.LogTextChan <- &logger.LogText{"port-lint-output-" + statusString, out}
+		logger.GlobalLogger.LogChan <- &logger.LogText{"port-lint-output-" + statusString, out}
 	}
 
 	if bWorker.wait() != 0 {

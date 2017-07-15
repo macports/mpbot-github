@@ -16,16 +16,15 @@ func init() {
 
 // Logger only exits when nil is send to its LogTextChan.
 type Logger struct {
-	LogTextChan    chan *LogText
-	LogFileChan    chan *LogFile
-	LogBigFileChan chan *LogFile
-	mimeWriter     *multipart.Writer
-	quitChan       chan byte
-	remoteLogger   *remoteLogger
+	LogChan      chan interface{}
+	mimeWriter   *multipart.Writer
+	quitChan     chan byte
+	remoteLogger *remoteLogger
 }
 
 type LogFile struct {
 	FieldName, Filename string
+	Big                 bool
 }
 
 type LogText struct {
@@ -35,11 +34,9 @@ type LogText struct {
 
 func newLogger(w io.Writer) *Logger {
 	logger := &Logger{
-		mimeWriter:     multipart.NewWriter(w),
-		quitChan:       make(chan byte),
-		LogTextChan:    make(chan *LogText, 4),
-		LogFileChan:    make(chan *LogFile, 4),
-		LogBigFileChan: make(chan *LogFile, 4),
+		LogChan:    make(chan interface{}),
+		mimeWriter: multipart.NewWriter(w),
+		quitChan:   make(chan byte),
 	}
 	logger.remoteLogger = newRemoteLogger(logger)
 	return logger
@@ -47,10 +44,39 @@ func newLogger(w io.Writer) *Logger {
 
 func (l *Logger) Run() {
 	go l.remoteLogger.run()
+
+	var log interface{}
 	for {
 		select {
-		case logFile := <-l.LogFileChan:
-			if logFile == nil {
+		case log = <-l.LogChan:
+		case <-time.After(time.Minute * 5):
+			log = &LogText{"keep-alive", []byte{}}
+		}
+
+		if log == nil {
+			l.remoteLogger.logBigFileChan <- nil
+			continue
+		}
+
+		logText, ok := log.(*LogText)
+		if ok {
+			if logText.FieldName == "" {
+				l.mimeWriter.Close()
+				l.quitChan <- 0
+				return
+			}
+			writer, err := l.mimeWriter.CreateFormField(logText.FieldName)
+			if err != nil {
+				continue
+			}
+			_, err = writer.Write(logText.Text)
+			continue
+		}
+
+		logFile, ok := log.(*LogFile)
+		if ok {
+			if logFile.Big {
+				l.remoteLogger.logBigFileChan <- logFile
 				continue
 			}
 			writer, err := l.mimeWriter.CreateFormField(logFile.FieldName)
@@ -65,26 +91,8 @@ func (l *Logger) Run() {
 			io.Copy(writer, file)
 
 			file.Close()
-			os.Remove(logFile.Filename)
-		case logText := <-l.LogTextChan:
-			if logText == nil {
-				l.remoteLogger.logBigFileChan <- nil
-				continue
-			}
-			if logText.FieldName == "" {
-				l.mimeWriter.Close()
-				l.quitChan <- 0
-				return
-			}
-			writer, err := l.mimeWriter.CreateFormField(logText.FieldName)
-			if err != nil {
-				continue
-			}
-			_, err = writer.Write(logText.Text)
-		case logBigFile := <-l.LogBigFileChan:
-			l.remoteLogger.logBigFileChan <- logBigFile
-		case <-time.After(time.Minute * 5):
-			l.LogTextChan <- &LogText{"keep-alive", []byte{}}
+			//os.Remove(logFile.Filename)
+			continue
 		}
 	}
 }

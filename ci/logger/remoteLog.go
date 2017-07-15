@@ -40,7 +40,7 @@ func (r *remoteLogger) run() {
 		select {
 		case logBigFile := <-r.logBigFileChan:
 			if logBigFile == nil {
-				r.parent.LogTextChan <- &LogText{FieldName: "", Text: nil}
+				r.parent.LogChan <- &LogText{FieldName: "", Text: nil}
 				return
 			}
 			fileInfo, err := os.Stat(logBigFile.Filename)
@@ -81,7 +81,7 @@ func (r *remoteLogger) run() {
 						err = iErr
 						break
 					}
-					r.parent.LogTextChan <- &LogText{
+					r.parent.LogChan <- &LogText{
 						logBigFile.FieldName + "-pastebin",
 						[]byte(u.String()),
 					}
@@ -90,7 +90,7 @@ func (r *remoteLogger) run() {
 				}
 			}
 			if err != nil {
-				r.parent.LogTextChan <- &LogText{
+				r.parent.LogChan <- &LogText{
 					logBigFile.FieldName + "-pastebin-fail",
 					[]byte(err.Error()),
 				}
