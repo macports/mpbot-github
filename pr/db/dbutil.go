@@ -7,6 +7,7 @@ import (
 
 	"errors"
 	_ "github.com/lib/pq"
+	"os"
 )
 
 type Maintainer struct {
@@ -28,11 +29,11 @@ var wwwDB *sql.DB
 func init() {
 	var err error
 	// TODO: use real dbname or read from env/flag
-	tracDB, err = sql.Open("postgres", "host=/tmp dbname=l2dy")
+	tracDB, err = sql.Open("postgres", "host=/tmp dbname="+os.Getenv("TRAC_DBNAME"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	wwwDB, err = sql.Open("postgres", "host=/tmp dbname=l2dy")
+	wwwDB, err = sql.Open("postgres", "host=/tmp dbname="+os.Getenv("WWW_DBNAME"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -10,11 +10,10 @@ import (
 
 type Client struct {
 	*github.Client
-	ctx         context.Context
-	owner, repo string
+	ctx context.Context
 }
 
-func NewClient(botSecret, owner, repo string) *Client {
+func NewClient(botSecret string) *Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: botSecret},
@@ -24,8 +23,6 @@ func NewClient(botSecret, owner, repo string) *Client {
 	return &Client{
 		Client: github.NewClient(tc),
 		ctx:    ctx,
-		owner:  owner,
-		repo:   repo,
 	}
 }
 
@@ -44,33 +41,33 @@ func (client *Client) ListChangedPorts(number int) ([]string, error) {
 	return ports, nil
 }
 
-func (client *Client) CreateComment(number int, body *string) error {
+func (client *Client) CreateComment(owner, repo string, number int, body *string) error {
 	_, _, err := client.Issues.CreateComment(
 		client.ctx,
-		client.owner,
-		client.repo,
+		owner,
+		repo,
 		number,
 		&github.IssueComment{Body: body},
 	)
 	return err
 }
 
-func (client *Client) ReplaceLabels(number int, labels []string) error {
+func (client *Client) ReplaceLabels(owner, repo string, number int, labels []string) error {
 	_, _, err := client.Issues.ReplaceLabelsForIssue(
 		client.ctx,
-		client.owner,
-		client.repo,
+		owner,
+		repo,
 		number,
 		labels,
 	)
 	return err
 }
 
-func (client *Client) ListLabels(number int) ([]string, error) {
+func (client *Client) ListLabels(owner, repo string, number int) ([]string, error) {
 	labels, _, err := client.Issues.ListLabelsByIssue(
 		client.ctx,
-		client.owner,
-		client.repo,
+		owner,
+		repo,
 		number,
 		nil,
 	)

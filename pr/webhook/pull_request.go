@@ -11,9 +11,11 @@ import (
 )
 
 func (receiver *Receiver) handlePullRequest(body []byte) {
-	// Use &&= for isOpenmaintainer/isNomaintainer (init true) flag, isNomaintainer take precedence
-	// Loop over ports and aggregate related maintainers
-	// Use @_handle for now
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println(r)
+		}
+	}()
 
 	event := &github.PullRequestEvent{}
 	err := json.Unmarshal(body, event)
@@ -22,6 +24,8 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		return
 	}
 	number := *event.Number
+	owner := *event.Repo.Owner.Login
+	repo := *event.Repo.Name
 	isOpenmaintainer := true
 	isNomaintainer := true
 	isMaintainer := false
@@ -54,7 +58,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		// Notify maintainers
 		if len(handles) > 0 {
 			body := "Notifying maintainers: @_" + strings.Join(handles, " @_")
-			err = receiver.githubClient.CreateComment(number, &body)
+			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
 			if err != nil {
 				log.Println(err)
 			}
@@ -62,7 +66,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		fallthrough
 	case "synchronize":
 		// Modify labels
-		labels, err := receiver.githubClient.ListLabels(number)
+		labels, err := receiver.githubClient.ListLabels(owner, repo, number)
 		newLabels := make([]string, len(labels))
 		copy(newLabels, labels)
 		if err != nil {
@@ -83,7 +87,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			}
 		}
 		newLabels = append(newLabels, maintainerLabels...)
-		err = receiver.githubClient.ReplaceLabels(number, newLabels)
+		err = receiver.githubClient.ReplaceLabels(owner, repo, number, newLabels)
 		if err != nil {
 			log.Println(err)
 		}

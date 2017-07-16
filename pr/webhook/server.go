@@ -22,7 +22,7 @@ func NewReceiver(listenAddr string, hookSecret []byte, botSecret string) *Receiv
 		listenAddr: listenAddr,
 		hookSecret: hookSecret,
 		// TODO: canonical owner
-		githubClient: githubapi.NewClient(botSecret, "macports-staging", "macports-ports"),
+		githubClient: githubapi.NewClient(botSecret),
 	}
 }
 
