@@ -12,10 +12,14 @@ import (
 func main() {
 	webhookAddr := flag.String("l", "localhost:8081", "listen address for webhook events")
 	flag.Parse()
-	hubSecret := []byte(os.Getenv("HUB_WEBHOOK_SECRET"))
-	if len(hubSecret) == 0 {
+	hookSecret := []byte(os.Getenv("HUB_WEBHOOK_SECRET"))
+	if len(hookSecret) == 0 {
 		log.Fatal("HUB_WEBHOOK_SECRET not found")
 	}
+	botSecret := os.Getenv("HUB_BOT_SECRET")
+	if botSecret == "" {
+		log.Fatal("HUB_BOT_SECRET not found")
+	}
 
-	webhook.NewReceiver(*webhookAddr, hubSecret).Start()
+	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret).Start()
 }

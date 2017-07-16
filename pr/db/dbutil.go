@@ -1,10 +1,11 @@
-package pr
+package db
 
 import (
 	"database/sql"
 	"log"
 	"strings"
 
+	"errors"
 	_ "github.com/lib/pq"
 )
 
@@ -16,8 +17,8 @@ type Maintainer struct {
 type PortMaintainer struct {
 	Primary        *Maintainer
 	Others         []*Maintainer
-	OpenMaintainer bool
 	NoMaintainer   bool
+	OpenMaintainer bool
 }
 
 var tracDB *sql.DB
@@ -66,16 +67,30 @@ func GetMaintainer(port string) (*PortMaintainer, error) {
 	maintainer := new(PortMaintainer)
 	maintainerCursor := ""
 	isPrimary := false
+	rowExist := false
 
 	for rows.Next() {
 		if err := rows.Scan(&maintainerCursor, &isPrimary); err != nil {
 			return nil, err
+		}
+		rowExist = true
+		switch maintainerCursor {
+		case "nomaintainer":
+			maintainer.NoMaintainer = true
+			continue
+		case "openmaintainer":
+			maintainer.OpenMaintainer = true
+			continue
 		}
 		if isPrimary {
 			maintainer.Primary = parseMaintainer(maintainerCursor)
 		} else {
 			maintainer.Others = append(maintainer.Others, parseMaintainer(maintainerCursor))
 		}
+	}
+
+	if !rowExist {
+		return nil, errors.New("port not found")
 	}
 
 	return maintainer, nil
@@ -92,6 +107,11 @@ func parseMaintainer(maintainerFullString string) *Maintainer {
 			maintainer.Email = emailParts[1] + "@" + emailParts[0]
 		} else {
 			maintainer.Email = maintainerString + "@macports.org"
+		}
+	}
+	if maintainer.GithubHandle == "" && maintainer.Email != "" {
+		if handle, err := GetGitHubHandle(maintainer.Email); err == nil {
+			maintainer.GithubHandle = handle
 		}
 	}
 	return maintainer

@@ -7,17 +7,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/macports/mpbot-github/pr/githubapi"
 )
 
 type Receiver struct {
-	listenAddr string
-	hubSecret  []byte
+	listenAddr   string
+	hookSecret   []byte
+	githubClient *githubapi.Client
 }
 
-func NewReceiver(listenAddr string, hubSecret []byte) *Receiver {
+func NewReceiver(listenAddr string, hookSecret []byte, botSecret string) *Receiver {
 	return &Receiver{
 		listenAddr: listenAddr,
-		hubSecret:  hubSecret,
+		hookSecret: hookSecret,
+		// TODO: canonical owner
+		githubClient: githubapi.NewClient(botSecret, "macports-staging", "macports-ports"),
 	}
 }
 
@@ -53,7 +58,7 @@ func (receiver *Receiver) Start() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		case "pull_request":
-			go handlePullRequest(body)
+			go receiver.handlePullRequest(body)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
@@ -64,7 +69,7 @@ func (receiver *Receiver) Start() {
 
 // checkMAC reports whether messageMAC is a valid HMAC tag for message.
 func (receiver *Receiver) checkMAC(message, messageMAC []byte) bool {
-	mac := hmac.New(sha1.New, receiver.hubSecret)
+	mac := hmac.New(sha1.New, receiver.hookSecret)
 	mac.Write(message)
 	expectedMAC := mac.Sum(nil)
 	return hmac.Equal(messageMAC, expectedMAC)
