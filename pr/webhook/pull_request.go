@@ -56,8 +56,12 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	switch *event.Action {
 	case "opened":
 		// Notify maintainers
+		mentionSymbol := "@_"
+		if receiver.production {
+			mentionSymbol = "@"
+		}
 		if len(handles) > 0 {
-			body := "Notifying maintainers: @_" + strings.Join(handles, " @_")
+			body := "Notifying maintainers: " + mentionSymbol + strings.Join(handles, " "+mentionSymbol)
 			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
 			if err != nil {
 				log.Println(err)

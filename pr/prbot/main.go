@@ -21,5 +21,11 @@ func main() {
 		log.Fatal("HUB_BOT_SECRET not found")
 	}
 
-	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret).Start()
+	prodFlag := false
+
+	if os.Getenv("BOT_ENV") == "production" {
+		prodFlag = true
+	}
+
+	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag).Start()
 }

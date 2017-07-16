@@ -14,14 +14,15 @@ import (
 type Receiver struct {
 	listenAddr   string
 	hookSecret   []byte
+	production   bool
 	githubClient *githubapi.Client
 }
 
-func NewReceiver(listenAddr string, hookSecret []byte, botSecret string) *Receiver {
+func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool) *Receiver {
 	return &Receiver{
-		listenAddr: listenAddr,
-		hookSecret: hookSecret,
-		// TODO: canonical owner
+		listenAddr:   listenAddr,
+		hookSecret:   hookSecret,
+		production:   production,
 		githubClient: githubapi.NewClient(botSecret),
 	}
 }
