@@ -26,8 +26,14 @@ func NewClient(botSecret string) *Client {
 	}
 }
 
-func (client *Client) ListChangedPortsAndLines(number int) (ports []string, changes []int, err error) {
-	files, _, err := client.PullRequests.ListFiles(context.Background(), "macports-staging", "macports-ports", number, nil)
+func (client *Client) ListChangedPortsAndLines(owner, repo string, number int) (ports []string, changes []int, err error) {
+	files, _, err := client.PullRequests.ListFiles(
+		context.Background(),
+		owner,
+		repo,
+		number,
+		nil,
+	)
 	if err != nil {
 		return nil, nil, err
 	}

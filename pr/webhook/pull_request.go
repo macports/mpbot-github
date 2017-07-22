@@ -28,7 +28,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	owner := *event.Repo.Owner.Login
 	repo := *event.Repo.Name
 
-	ports, changes, err := receiver.githubClient.ListChangedPortsAndLines(number)
+	ports, changes, err := receiver.githubClient.ListChangedPortsAndLines(owner, repo, number)
 	if err != nil {
 		log.Println(err)
 		return
