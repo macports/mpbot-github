@@ -42,6 +42,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	for i, port := range ports {
 		portMaintainer, err := db.GetPortMaintainer(port)
 		if err != nil {
+			log.Println("Error getting maintainer for port " + port + ": " + err.Error())
 			continue
 		}
 		isNomaintainer = isNomaintainer && portMaintainer.NoMaintainer
