@@ -26,32 +26,43 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	number := *event.Number
 	owner := *event.Repo.Owner.Login
 	repo := *event.Repo.Name
-	isOpenmaintainer := true
-	isNomaintainer := true
-	isMaintainer := false
-	ports, err := receiver.githubClient.ListChangedPorts(number)
+
+	ports, changes, err := receiver.githubClient.ListChangedPortsAndLines(number)
 	if err != nil {
 		return
 	}
-	handles := make([]string, 0, 1)
-	for _, port := range ports {
-		maintainer, err := db.GetMaintainer(port)
+
+	handles := make(map[string][]string)
+	isOpenmaintainer := true
+	isNomaintainer := true
+	isMaintainer := true
+	isOneMaintainer := false
+	for i, port := range ports {
+		portMaintainer, err := db.GetPortMaintainer(port)
 		if err != nil {
 			continue
 		}
-		isNomaintainer = isNomaintainer && maintainer.NoMaintainer
-		isOpenmaintainer = isOpenmaintainer && (maintainer.OpenMaintainer || maintainer.NoMaintainer)
-		if maintainer.NoMaintainer {
+		isNomaintainer = isNomaintainer && portMaintainer.NoMaintainer
+		isOpenmaintainer = isOpenmaintainer && (portMaintainer.OpenMaintainer || portMaintainer.NoMaintainer)
+		if portMaintainer.NoMaintainer {
 			continue
 		}
-		if maintainer.Primary.GithubHandle != "" {
-			handles = append(handles, maintainer.Primary.GithubHandle)
-			if maintainer.Primary.GithubHandle == *event.Sender.Login {
-				// TODO: should be set only when the sender is maintainer of all modified ports
-				isMaintainer = true
+		allMaintainers := append(portMaintainer.Others, portMaintainer.Primary)
+		isPortMaintainer := false
+		for _, maintainer := range allMaintainers {
+			if maintainer.GithubHandle != "" {
+				handles[maintainer.GithubHandle] = append(handles[maintainer.GithubHandle], port)
+				if maintainer.GithubHandle == *event.Sender.Login {
+					isPortMaintainer = true
+					isOneMaintainer = true
+				}
 			}
 		}
+		if changes[i] > 7 && !isPortMaintainer {
+			isMaintainer = false
+		}
 	}
+	isMaintainer = isOneMaintainer && isMaintainer
 
 	switch *event.Action {
 	case "opened":
@@ -61,7 +72,11 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			mentionSymbol = "@"
 		}
 		if len(handles) > 0 {
-			body := "Notifying maintainers: " + mentionSymbol + strings.Join(handles, " "+mentionSymbol)
+			body := "Notifying maintainers:\n"
+			for handle, ports := range handles {
+				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
+			}
+			body += "\nBy a harmless bot."
 			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
 			if err != nil {
 				log.Println(err)

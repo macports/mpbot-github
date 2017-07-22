@@ -26,19 +26,19 @@ func NewClient(botSecret string) *Client {
 	}
 }
 
-func (client *Client) ListChangedPorts(number int) ([]string, error) {
+func (client *Client) ListChangedPortsAndLines(number int) (ports []string, changes []int, err error) {
 	files, _, err := client.PullRequests.ListFiles(context.Background(), "macports-staging", "macports-ports", number, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	ports := make([]string, 0, 1)
 	portfileRegexp := regexp.MustCompile(`[^\._/][^/]*/([^/]+)/Portfile`)
 	for _, file := range files {
 		if match := portfileRegexp.FindStringSubmatch(*file.Filename); match != nil {
 			ports = append(ports, match[1])
+			changes = append(changes, *file.Changes)
 		}
 	}
-	return ports, nil
+	return
 }
 
 func (client *Client) CreateComment(owner, repo string, number int, body *string) error {

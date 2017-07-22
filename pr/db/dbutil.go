@@ -54,9 +54,8 @@ func GetGitHubHandle(email string) (string, error) {
 	return sid, nil
 }
 
-// GetMaintainer returns the maintainers of a port,
-// the primary maintainer is always the first in the slice.
-func GetMaintainer(port string) (*PortMaintainer, error) {
+// GetPortMaintainer returns the maintainers of a port
+func GetPortMaintainer(port string) (*PortMaintainer, error) {
 	rows, err := wwwDB.Query("SELECT maintainer, is_primary "+
 		"FROM public.maintainers "+
 		"WHERE portfile = $1", port)
