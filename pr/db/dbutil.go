@@ -28,12 +28,11 @@ var wwwDB *sql.DB
 // Create connections to DBs
 func init() {
 	var err error
-	// TODO: use real dbname or read from env/flag
-	tracDB, err = sql.Open("postgres", "host=/tmp dbname="+os.Getenv("TRAC_DBNAME"))
+	tracDB, err = sql.Open("postgres", os.Getenv("TRAC_DBNAME"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	wwwDB, err = sql.Open("postgres", "host=/tmp dbname="+os.Getenv("WWW_DBNAME"))
+	wwwDB, err = sql.Open("postgres", os.Getenv("WWW_DBNAME"))
 	if err != nil {
 		log.Fatal(err)
 	}
