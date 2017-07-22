@@ -21,6 +21,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	err := json.Unmarshal(body, event)
 	if err != nil {
 		// TODO: log
+		log.Println(err)
 		return
 	}
 	number := *event.Number
@@ -29,6 +30,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 
 	ports, changes, err := receiver.githubClient.ListChangedPortsAndLines(number)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
@@ -89,6 +91,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		newLabels := make([]string, len(labels))
 		copy(newLabels, labels)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		maintainerLabels := make([]string, 0)
