@@ -141,7 +141,9 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
 		}
 
-		newLabels = append(newLabels, maintainerLabels...)
+		if len(ports) > 0 {
+			newLabels = append(newLabels, maintainerLabels...)
+		}
 		newLabels = append(newLabels, typeLabels...)
 
 		err = receiver.githubClient.ReplaceLabels(owner, repo, number, newLabels)
