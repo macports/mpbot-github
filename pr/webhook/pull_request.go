@@ -137,7 +137,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		if isSubmission {
 			typeLabels = appendIfUnique(typeLabels, "type: submission")
 		}
-		if strings.Contains(*event.PullRequest.Title, ": update to") {
+		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update to") {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
 		}
 
