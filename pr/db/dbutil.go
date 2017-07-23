@@ -24,6 +24,7 @@ type PortMaintainer struct {
 
 var tracDB *sql.DB
 var wwwDB *sql.DB
+var prDB *sql.DB
 
 // Create connections to DBs
 func init() {
@@ -33,6 +34,10 @@ func init() {
 		log.Fatal(err)
 	}
 	wwwDB, err = sql.Open("postgres", os.Getenv("WWW_DB"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	prDB, err = sql.Open("postgres", os.Getenv("PR_DB"))
 	if err != nil {
 		log.Fatal(err)
 	}
