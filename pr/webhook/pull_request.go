@@ -28,20 +28,34 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	owner := *event.Repo.Owner.Login
 	repo := *event.Repo.Name
 
-	ports, changes, err := receiver.githubClient.ListChangedPortsAndLines(owner, repo, number)
+	ports, files, err := receiver.githubClient.ListChangedPortsAndFiles(owner, repo, number)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	handles := make(map[string][]string)
+	// If unrecognized port was added
+	isSubmission := false
+	// If all ports changed are openmaintainer or nomaintainer
 	isOpenmaintainer := true
+	// If all ports changed have no maintainers
 	isNomaintainer := true
+	// If PR sender is maintainer of all ports changed (exclude minor changes and nomaintainer)
 	isMaintainer := true
+	// If PR sender is maintainer of one of the ports changed
 	isOneMaintainer := false
 	for i, port := range ports {
 		portMaintainer, err := db.GetPortMaintainer(port)
 		if err != nil {
+			// TODO: handle submission of duplicate ports
+			if err.Error() == "port not found" && *files[i].Status == "added" {
+				isSubmission = true
+				// Could be adding a -devel port, so keep the "maintainer" label
+				isNomaintainer = false
+				isOpenmaintainer = false
+				continue
+			}
 			log.Println("Error getting maintainer for port " + port + ": " + err.Error())
 			continue
 		}
@@ -61,7 +75,9 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 				}
 			}
 		}
-		if changes[i] > 7 && !isPortMaintainer {
+		// Minor changes like increase revision of dependents
+		// TODO: Should we notify maintainers in this case?
+		if *files[i].Changes > 2 && !isPortMaintainer {
 			isMaintainer = false
 		}
 	}
@@ -85,17 +101,17 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 				log.Println(err)
 			}
 		}
-		fallthrough
-	case "synchronize":
+
 		// Modify labels
 		labels, err := receiver.githubClient.ListLabels(owner, repo, number)
-		newLabels := make([]string, len(labels))
-		copy(newLabels, labels)
 		if err != nil {
 			log.Println(err)
 			return
 		}
+		newLabels := make([]string, 0, len(labels))
 		maintainerLabels := make([]string, 0)
+		typeLabels := make([]string, 0)
+
 		if isMaintainer {
 			maintainerLabels = append(maintainerLabels, "maintainer")
 		}
@@ -104,16 +120,46 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		} else if isOpenmaintainer {
 			maintainerLabels = append(maintainerLabels, "maintainer: open")
 		}
+
+		// Collect existing labels (PR sender could add labels when creating a PR)
 		for _, label := range labels {
 			if !strings.HasPrefix(label, "maintainer") {
-				newLabels = append(newLabels, label)
+				if strings.HasPrefix(label, "type: ") {
+					typeLabels = append(typeLabels, label)
+				} else {
+					newLabels = append(newLabels, label)
+				}
 			}
 		}
+
+		// Determine type labels
+		// TODO: read PR body to determine type
+		if isSubmission {
+			typeLabels = appendIfUnique(typeLabels, "type: submission")
+		}
+		if strings.Contains(*event.PullRequest.Title, ": update to") {
+			typeLabels = appendIfUnique(typeLabels, "type: update")
+		}
+
 		newLabels = append(newLabels, maintainerLabels...)
+		newLabels = append(newLabels, typeLabels...)
+
 		err = receiver.githubClient.ReplaceLabels(owner, repo, number, newLabels)
 		if err != nil {
 			log.Println(err)
 		}
+		//	fallthrough
+		//case "synchronize":
 	}
 	log.Println("PR #" + strconv.Itoa(number) + " processed")
+}
+
+// TODO: use map to dedup
+func appendIfUnique(slice []string, elem string) []string {
+	for _, e := range slice {
+		if e == elem {
+			return slice
+		}
+	}
+	return append(slice, elem)
 }

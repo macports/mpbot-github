@@ -26,7 +26,7 @@ func NewClient(botSecret string) *Client {
 	}
 }
 
-func (client *Client) ListChangedPortsAndLines(owner, repo string, number int) (ports []string, changes []int, err error) {
+func (client *Client) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
 	files, _, err := client.PullRequests.ListFiles(
 		context.Background(),
 		owner,
@@ -41,7 +41,7 @@ func (client *Client) ListChangedPortsAndLines(owner, repo string, number int) (
 	for _, file := range files {
 		if match := portfileRegexp.FindStringSubmatch(*file.Filename); match != nil {
 			ports = append(ports, match[1])
-			changes = append(changes, *file.Changes)
+			commitFiles = append(commitFiles, file)
 		}
 	}
 	return
