@@ -68,15 +68,15 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		isPortMaintainer := false
 		for _, maintainer := range allMaintainers {
 			if maintainer.GithubHandle != "" {
-				handles[maintainer.GithubHandle] = append(handles[maintainer.GithubHandle], port)
 				if maintainer.GithubHandle == *event.Sender.Login {
 					isPortMaintainer = true
 					isOneMaintainer = true
+				} else if len(ports) < 2 || *files[i].Changes > 2 {
+					handles[maintainer.GithubHandle] = append(handles[maintainer.GithubHandle], port)
 				}
 			}
 		}
-		// Minor changes like increase revision of dependents
-		// TODO: Should we notify maintainers in this case?
+		// Exclude minor changes like increase revision of dependents
 		if *files[i].Changes > 2 && !isPortMaintainer {
 			isMaintainer = false
 		}
@@ -90,7 +90,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		if receiver.production {
 			mentionSymbol = "@"
 		}
-		if len(handles) > 0 {
+		if len(handles) > 0 && !strings.Contains(*event.PullRequest.Body, "[skip notification]") {
 			body := "Notifying maintainers:\n"
 			for handle, ports := range handles {
 				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
