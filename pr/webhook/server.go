@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/macports/mpbot-github/pr/db"
 	"github.com/macports/mpbot-github/pr/githubapi"
 )
 
@@ -15,15 +16,18 @@ type Receiver struct {
 	listenAddr   string
 	hookSecret   []byte
 	production   bool
-	githubClient *githubapi.Client
+	testing      bool
+	githubClient githubapi.Client
+	dbHelper     db.DBHelper
 }
 
-func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool) *Receiver {
+func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool, dbHelper db.DBHelper) *Receiver {
 	return &Receiver{
 		listenAddr:   listenAddr,
 		hookSecret:   hookSecret,
 		production:   production,
 		githubClient: githubapi.NewClient(botSecret),
+		dbHelper:     dbHelper,
 	}
 }
 
@@ -60,6 +64,8 @@ func (receiver *Receiver) Start() {
 			return
 		case "pull_request":
 			go receiver.handlePullRequest(body)
+		case "pull_request_review":
+			go receiver.handlePullRequestReview(body)
 		}
 
 		w.WriteHeader(http.StatusNoContent)

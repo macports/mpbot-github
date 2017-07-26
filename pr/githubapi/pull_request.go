@@ -5,28 +5,9 @@ import (
 	"regexp"
 
 	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 )
 
-type Client struct {
-	*github.Client
-	ctx context.Context
-}
-
-func NewClient(botSecret string) *Client {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: botSecret},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	return &Client{
-		Client: github.NewClient(tc),
-		ctx:    ctx,
-	}
-}
-
-func (client *Client) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
+func (client *githubClient) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
 	files, _, err := client.PullRequests.ListFiles(
 		context.Background(),
 		owner,
@@ -47,7 +28,7 @@ func (client *Client) ListChangedPortsAndFiles(owner, repo string, number int) (
 	return
 }
 
-func (client *Client) CreateComment(owner, repo string, number int, body *string) error {
+func (client *githubClient) CreateComment(owner, repo string, number int, body *string) error {
 	_, _, err := client.Issues.CreateComment(
 		client.ctx,
 		owner,
@@ -58,7 +39,7 @@ func (client *Client) CreateComment(owner, repo string, number int, body *string
 	return err
 }
 
-func (client *Client) ReplaceLabels(owner, repo string, number int, labels []string) error {
+func (client *githubClient) ReplaceLabels(owner, repo string, number int, labels []string) error {
 	_, _, err := client.Issues.ReplaceLabelsForIssue(
 		client.ctx,
 		owner,
@@ -69,7 +50,7 @@ func (client *Client) ReplaceLabels(owner, repo string, number int, labels []str
 	return err
 }
 
-func (client *Client) ListLabels(owner, repo string, number int) ([]string, error) {
+func (client *githubClient) ListLabels(owner, repo string, number int) ([]string, error) {
 	labels, _, err := client.Issues.ListLabelsByIssue(
 		client.ctx,
 		owner,

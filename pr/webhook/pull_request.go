@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
-	"github.com/macports/mpbot-github/pr/db"
 )
 
 var cveRegexp = regexp.MustCompile(`CVE-\d{4}-\d+`)
@@ -49,7 +48,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	// If PR sender is maintainer of one of the ports changed
 	isOneMaintainer := false
 	for i, port := range ports {
-		portMaintainer, err := db.GetPortMaintainer(port)
+		portMaintainer, err := receiver.dbHelper.GetPortMaintainer(port)
 		if err != nil {
 			// TODO: handle submission of duplicate ports
 			if err.Error() == "port not found" && *files[i].Status == "added" {
@@ -168,7 +167,9 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		//	fallthrough
 		//case "synchronize":
 	}
-	log.Println("PR #" + strconv.Itoa(number) + " processed")
+	if !receiver.testing {
+		log.Println("PR #" + strconv.Itoa(number) + " processed")
+	}
 }
 
 // TODO: use map to dedup

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/macports/mpbot-github/pr/db"
 	"github.com/macports/mpbot-github/pr/webhook"
 )
 
@@ -22,10 +23,14 @@ func main() {
 	}
 
 	prodFlag := false
-
 	if os.Getenv("BOT_ENV") == "production" {
 		prodFlag = true
 	}
 
-	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag).Start()
+	dbHelper, err := db.NewDBHelper()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag, dbHelper).Start()
 }

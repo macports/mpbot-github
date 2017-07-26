@@ -2,12 +2,12 @@ package db
 
 import (
 	"database/sql"
-	"log"
+	"errors"
+	"os"
 	"strings"
 
-	"errors"
+	// PostgreSQL driver
 	_ "github.com/lib/pq"
-	"os"
 )
 
 type Maintainer struct {
@@ -22,30 +22,39 @@ type PortMaintainer struct {
 	OpenMaintainer bool
 }
 
-var tracDB *sql.DB
-var wwwDB *sql.DB
-var prDB *sql.DB
-
-// Create connections to DBs
-func init() {
-	var err error
-	tracDB, err = sql.Open("postgres", os.Getenv("TRAC_DB"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	wwwDB, err = sql.Open("postgres", os.Getenv("WWW_DB"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	prDB, err = sql.Open("postgres", os.Getenv("PR_DB"))
-	if err != nil {
-		log.Fatal(err)
-	}
+type DBHelper interface {
+	GetGitHubHandle(email string) (string, error)
+	GetPortMaintainer(port string) (*PortMaintainer, error)
 }
 
-func GetGitHubHandle(email string) (string, error) {
+func NewDBHelper() (DBHelper, error) {
+	// TODO: move os.Getenv to main
+	tracDB, err := sql.Open("postgres", os.Getenv("TRAC_DB"))
+	if err != nil {
+		return nil, err
+	}
+	wwwDB, err := sql.Open("postgres", os.Getenv("WWW_DB"))
+	if err != nil {
+		return nil, err
+	}
+	prDB, err := sql.Open("postgres", os.Getenv("PR_DB"))
+	if err != nil {
+		return nil, err
+	}
+	return &sqlDBHelper{
+		tracDB: tracDB,
+		wwwDB:  wwwDB,
+		prDB:   prDB,
+	}, nil
+}
+
+type sqlDBHelper struct {
+	tracDB, wwwDB, prDB *sql.DB
+}
+
+func (sqlDB *sqlDBHelper) GetGitHubHandle(email string) (string, error) {
 	sid := ""
-	err := tracDB.QueryRow("SELECT sid "+
+	err := sqlDB.tracDB.QueryRow("SELECT sid "+
 		"FROM trac_macports.session_attribute "+
 		"WHERE value = $1 "+
 		"AND name = 'email' "+
@@ -59,8 +68,8 @@ func GetGitHubHandle(email string) (string, error) {
 }
 
 // GetPortMaintainer returns the maintainers of a port
-func GetPortMaintainer(port string) (*PortMaintainer, error) {
-	rows, err := wwwDB.Query("SELECT maintainer, is_primary "+
+func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error) {
+	rows, err := sqlDB.wwwDB.Query("SELECT maintainer, is_primary "+
 		"FROM public.maintainers "+
 		"WHERE portfile = $1", port)
 	if err != nil {
@@ -87,9 +96,9 @@ func GetPortMaintainer(port string) (*PortMaintainer, error) {
 			continue
 		}
 		if isPrimary {
-			maintainer.Primary = parseMaintainer(maintainerCursor)
+			maintainer.Primary = sqlDB.parseMaintainer(maintainerCursor)
 		} else {
-			maintainer.Others = append(maintainer.Others, parseMaintainer(maintainerCursor))
+			maintainer.Others = append(maintainer.Others, sqlDB.parseMaintainer(maintainerCursor))
 		}
 	}
 
@@ -100,7 +109,17 @@ func GetPortMaintainer(port string) (*PortMaintainer, error) {
 	return maintainer, nil
 }
 
-func parseMaintainer(maintainerFullString string) *Maintainer {
+func (sqlDB *sqlDBHelper) parseMaintainer(maintainerFullString string) *Maintainer {
+	maintainer := parseMaintainerString(maintainerFullString)
+	if maintainer.GithubHandle == "" && maintainer.Email != "" {
+		if handle, err := sqlDB.GetGitHubHandle(maintainer.Email); err == nil {
+			maintainer.GithubHandle = handle
+		}
+	}
+	return maintainer
+}
+
+func parseMaintainerString(maintainerFullString string) *Maintainer {
 	maintainerStrings := strings.Split(maintainerFullString, " ")
 	maintainer := new(Maintainer)
 	for _, maintainerString := range maintainerStrings {
@@ -111,11 +130,6 @@ func parseMaintainer(maintainerFullString string) *Maintainer {
 			maintainer.Email = emailParts[1] + "@" + emailParts[0]
 		} else {
 			maintainer.Email = maintainerString + "@macports.org"
-		}
-	}
-	if maintainer.GithubHandle == "" && maintainer.Email != "" {
-		if handle, err := GetGitHubHandle(maintainer.Email); err == nil {
-			maintainer.GithubHandle = handle
 		}
 	}
 	return maintainer
