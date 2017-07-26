@@ -2,13 +2,16 @@ package webhook
 
 import (
 	"encoding/json"
+	"log"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/macports/mpbot-github/pr/db"
-	"log"
-	"strconv"
 )
+
+var cveRegexp = regexp.MustCompile(`CVE-\d{4}-\d+`)
 
 func (receiver *Receiver) handlePullRequest(body []byte) {
 	defer func() {
@@ -119,6 +122,9 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			maintainerLabels = append(maintainerLabels, "maintainer: none")
 		} else if isOpenmaintainer {
 			maintainerLabels = append(maintainerLabels, "maintainer: open")
+		} else if !isSubmission && !isMaintainer {
+			// TODO: store in DB
+			maintainerLabels = append(maintainerLabels, "maintainer: requires approval")
 		}
 
 		// Collect existing labels (PR sender could add labels when creating a PR)
@@ -139,6 +145,15 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		}
 		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update to") {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
+		}
+		if cveRegexp.FindString(*event.PullRequest.Body) != "" {
+			typeLabels = appendIfUnique(typeLabels, "type: security fix")
+		}
+		typesFromBody := []string{"bugfix", "enhancement", "security fix"}
+		for _, t := range typesFromBody {
+			if strings.Contains(*event.PullRequest.Body, "[x] "+t) {
+				typeLabels = appendIfUnique(typeLabels, "type: "+t)
+			}
 		}
 
 		if len(ports) > 0 {
