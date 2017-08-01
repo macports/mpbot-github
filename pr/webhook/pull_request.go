@@ -130,12 +130,13 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 
 		// Collect existing labels (PR sender could add labels when creating a PR)
 		for _, label := range labels {
-			if !strings.HasPrefix(label, "maintainer") {
-				if strings.HasPrefix(label, "type: ") {
-					typeLabels = append(typeLabels, label)
-				} else {
-					newLabels = append(newLabels, label)
-				}
+			if strings.HasPrefix(label, "maintainer") {
+				continue
+			}
+			if strings.HasPrefix(label, "type: ") {
+				typeLabels = append(typeLabels, label)
+			} else {
+				newLabels = append(newLabels, label)
 			}
 		}
 
