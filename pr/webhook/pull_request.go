@@ -163,6 +163,16 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		}
 		newLabels = append(newLabels, typeLabels...)
 
+		receiver.membersLock.RLock()
+		members := receiver.members
+		receiver.membersLock.RUnlock()
+		if members != nil {
+			_, exist := (*members)[*event.Sender.Login]
+			if exist {
+				newLabels = appendIfUnique(newLabels, "by: member")
+			}
+		}
+
 		err = receiver.githubClient.ReplaceLabels(owner, repo, number, newLabels)
 		if err != nil {
 			log.Println(err)

@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/macports/mpbot-github/pr/db"
 	"github.com/macports/mpbot-github/pr/githubapi"
@@ -19,6 +21,8 @@ type Receiver struct {
 	testing      bool
 	githubClient githubapi.Client
 	dbHelper     db.DBHelper
+	members      *map[string]bool
+	membersLock  sync.RWMutex
 }
 
 func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool, dbHelper db.DBHelper) *Receiver {
@@ -71,7 +75,34 @@ func (receiver *Receiver) Start() {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
+	go receiver.updateMembers()
+
 	http.ListenAndServe(receiver.listenAddr, mux)
+}
+
+func (receiver *Receiver) updateMembers() {
+	for ; ; time.Sleep(24 * time.Hour) {
+		users, err := receiver.githubClient.ListOrgMembers("macports")
+		if err != nil {
+			continue
+		}
+		members := make(map[string]bool)
+		for _, user := range users {
+			if user.Login == nil {
+				continue
+			}
+			login := *user.Login
+			if login == "" {
+				continue
+			}
+			members[login] = true
+		}
+		if len(members) > 0 {
+			receiver.membersLock.Lock()
+			receiver.members = &members
+			receiver.membersLock.Unlock()
+		}
+	}
 }
 
 // checkMAC reports whether messageMAC is a valid HMAC tag for message.
