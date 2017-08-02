@@ -33,14 +33,29 @@ func NewDBHelper() (DBHelper, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = tracDB.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	wwwDB, err := sql.Open("postgres", os.Getenv("WWW_DB"))
 	if err != nil {
 		return nil, err
 	}
+	err = wwwDB.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	prDB, err := sql.Open("postgres", os.Getenv("PR_DB"))
 	if err != nil {
 		return nil, err
 	}
+	err = prDB.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	return &sqlDBHelper{
 		tracDB: tracDB,
 		wwwDB:  wwwDB,
