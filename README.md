@@ -2,8 +2,7 @@
 
 The PR bot processes GitHub webhook events and can be built with `go get github.com/macports/mpbot-github/pr/prbot`.
 
-The CI bot tests PRs on Travis CI and can be built with `go get github.com/macports/mpbot-github/ci/runner`,
-it assumes that MacPorts is already installed and no cleanup is needed.
+The CI bot tests PRs on Travis CI and can be built with `go get github.com/macports/mpbot-github/ci/runner`.
 
 ## PR bot
 
@@ -22,3 +21,8 @@ In `pr/prbot/main.go`, secrets and production flag:
 - BOT_ENV: set to `production` to actually mention maintainers
 
 You can use `-l addr:port` to set the listen address for GitHub webhook.
+
+## CI bot
+
+The CI bot is executed as root under Travis CI environment bootstrapped by [this script](https://github.com/macports/macports-ports/blob/master/_ci/bootstrap.sh).
+It assumes that MacPorts is already installed and no cleanup is needed.
