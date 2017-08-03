@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"os"
 	"strings"
 
@@ -115,6 +116,11 @@ func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error
 		} else {
 			maintainer.Others = append(maintainer.Others, sqlDB.parseMaintainer(maintainerCursor))
 		}
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
 	}
 
 	if !rowExist {
