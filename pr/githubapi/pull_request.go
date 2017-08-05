@@ -8,18 +8,28 @@ import (
 )
 
 func (client *githubClient) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
-	files, _, err := client.PullRequests.ListFiles(
-		context.Background(),
-		owner,
-		repo,
-		number,
-		nil,
-	)
-	if err != nil {
-		return nil, nil, err
+	var allFiles []*github.CommitFile
+	opt := &github.ListOptions{PerPage: 30}
+	for {
+		files, resp, err := client.PullRequests.ListFiles(
+			context.Background(),
+			owner,
+			repo,
+			number,
+			opt,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		allFiles = append(allFiles, files...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
+
 	portfileRegexp := regexp.MustCompile(`[^\._/][^/]*/([^/]+)/Portfile`)
-	for _, file := range files {
+	for _, file := range allFiles {
 		if match := portfileRegexp.FindStringSubmatch(*file.Filename); match != nil {
 			ports = append(ports, match[1])
 			commitFiles = append(commitFiles, file)
@@ -56,7 +66,7 @@ func (client *githubClient) ListLabels(owner, repo string, number int) ([]string
 		owner,
 		repo,
 		number,
-		nil,
+		&github.ListOptions{PerPage: 100},
 	)
 	if err != nil {
 		return nil, err
