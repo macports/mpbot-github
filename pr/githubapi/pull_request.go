@@ -7,6 +7,11 @@ import (
 	"github.com/google/go-github/github"
 )
 
+func (client *githubClient) GetPullRequest(owner, repo string, number int) (*github.PullRequest, error) {
+	pr, _, err := client.PullRequests.Get(context.Background(), owner, repo, number)
+	return pr, err
+}
+
 func (client *githubClient) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
 	var allFiles []*github.CommitFile
 	opt := &github.ListOptions{PerPage: 30}

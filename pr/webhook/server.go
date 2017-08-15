@@ -70,6 +70,8 @@ func (receiver *Receiver) Start() {
 			go receiver.handlePullRequest(body)
 		case "pull_request_review":
 			go receiver.handlePullRequestReview(body)
+		case "issue_comment":
+			go receiver.handleIssueComment(body)
 		}
 
 		w.WriteHeader(http.StatusNoContent)

@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/macports/mpbot-github/pr/cron"
 	"github.com/macports/mpbot-github/pr/db"
+	"github.com/macports/mpbot-github/pr/githubapi"
 	"github.com/macports/mpbot-github/pr/webhook"
 )
 
@@ -31,6 +33,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	cronManager := cron.Manager{
+		DB:     dbHelper,
+		Client: githubapi.NewClient(botSecret),
+	}
+	go cronManager.Start()
 
 	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag, dbHelper).Start()
 }

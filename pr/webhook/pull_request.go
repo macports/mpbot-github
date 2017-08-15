@@ -22,7 +22,6 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	event := &github.PullRequestEvent{}
 	err := json.Unmarshal(body, event)
 	if err != nil {
-		// TODO: log
 		log.Println(err)
 		return
 	}
@@ -87,8 +86,18 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	}
 	isMaintainer = isOneMaintainer && isMaintainer
 
+	maintainers := make([]string, len(handles))
+	{
+		i := 0
+		for k := range handles {
+			maintainers[i] = k
+			i++
+		}
+	}
+
 	switch *event.Action {
 	case "opened":
+		receiver.dbHelper.NewPR(number, maintainers)
 		// Notify maintainers
 		mentionSymbol := "@_"
 		if receiver.production {
@@ -125,6 +134,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		} else if !isSubmission && !isMaintainer {
 			// TODO: store in DB
 			maintainerLabels = append(maintainerLabels, "maintainer: requires approval")
+			receiver.dbHelper.SetPRPendingReview(number, true)
 		}
 
 		// Collect existing labels (PR sender could add labels when creating a PR)
@@ -176,6 +186,8 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		if err != nil {
 			log.Println(err)
 		}
+
+		receiver.dbHelper.SetPRProcessed(number, true)
 		//	fallthrough
 		//case "synchronize":
 	}

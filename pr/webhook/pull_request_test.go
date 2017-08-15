@@ -92,6 +92,10 @@ type stubGitHubClient struct {
 	newLabels  []string
 }
 
+func (stub *stubGitHubClient) GetPullRequest(owner, repo string, number int) (*github.PullRequest, error) {
+	return nil, errNotFound
+}
+
 func (stub *stubGitHubClient) ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error) {
 	if owner != "macports" || repo != "macports-ports" {
 		return nil, nil, errNotFound
@@ -180,6 +184,23 @@ func (stub *stubDBHelper) GetPortMaintainer(port string) (*db.PortMaintainer, er
 		}, nil
 	}
 	return nil, errors.New("port not found")
+}
+
+func (stub *stubDBHelper) NewPR(number int, maintainers []string) error {
+	return nil
+}
+func (stub *stubDBHelper) GetPR(number int) (*db.PullRequest, error) {
+	return nil, nil
+}
+func (stub *stubDBHelper) GetTimeoutPRs() ([]*db.PullRequest, error) {
+	return nil, nil
+}
+func (stub *stubDBHelper) SetPRProcessed(number int, processed bool) error {
+	return nil
+}
+
+func (stub *stubDBHelper) SetPRPendingReview(number int, pendingReview bool) error {
+	return nil
 }
 
 func ptrOfStr(s string) *string {

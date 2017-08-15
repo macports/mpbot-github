@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	// PostgreSQL driver
 	_ "github.com/lib/pq"
@@ -23,9 +24,21 @@ type PortMaintainer struct {
 	OpenMaintainer bool
 }
 
+type PullRequest struct {
+	Number        int
+	Processed     bool
+	PendingReview bool
+	Maintainers   []string
+}
+
 type DBHelper interface {
 	GetGitHubHandle(email string) (string, error)
 	GetPortMaintainer(port string) (*PortMaintainer, error)
+	NewPR(number int, maintainers []string) error
+	GetPR(number int) (*PullRequest, error)
+	GetTimeoutPRs() ([]*PullRequest, error)
+	SetPRProcessed(number int, processed bool) error
+	SetPRPendingReview(number int, pendingReview bool) error
 }
 
 func NewDBHelper() (DBHelper, error) {
@@ -53,6 +66,17 @@ func NewDBHelper() (DBHelper, error) {
 		return nil, err
 	}
 	err = prDB.Ping()
+	if err != nil {
+		return nil, err
+	}
+	_, err = prDB.Exec(`CREATE TABLE IF NOT EXISTS pull_requests
+(
+	number INT PRIMARY KEY,
+	created TIMESTAMP NOT NULL,
+	processed BOOLEAN NOT NULL,
+	pending_review BOOLEAN NOT NULL,
+	maintainers TEXT NOT NULL
+);`)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +144,7 @@ func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error
 
 	err = rows.Err()
 	if err != nil {
+		//TODO: log in caller
 		log.Println(err)
 	}
 
@@ -128,6 +153,63 @@ func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error
 	}
 
 	return maintainer, nil
+}
+
+func (sqlDB *sqlDBHelper) NewPR(number int, maintainers []string) error {
+	_, err := sqlDB.prDB.Exec("INSERT INTO pull_requests VALUES ($1, $2, $3, $4, $5)",
+		number, time.Now(), false, false, strings.Join(maintainers, " "))
+	return err
+}
+
+func (sqlDB *sqlDBHelper) GetPR(number int) (*PullRequest, error) {
+	pr := new(PullRequest)
+	var maintainerString string
+	err := sqlDB.prDB.QueryRow(
+		"SELECT number, processed, pending_review, maintainers FROM pull_requests WHERE number = $1", number).
+		Scan(&pr.Number, &pr.Processed, &pr.PendingReview, &maintainerString)
+	if err != nil {
+		return nil, err
+	}
+	pr.Maintainers = strings.Split(maintainerString, " ")
+	return pr, nil
+}
+
+func (sqlDB *sqlDBHelper) GetTimeoutPRs() ([]*PullRequest, error) {
+	var prs []*PullRequest
+	rows, err := sqlDB.wwwDB.Query("SELECT number, processed, pending_review, maintainers "+
+		"FROM pull_requests "+
+		"WHERE created <= $1 AND pending_review = true", time.Now().AddDate(0, 0, -3))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		pr := new(PullRequest)
+		var maintainerString string
+		if err := rows.Scan(&pr.Number, &pr.Processed, &pr.PendingReview, &maintainerString); err != nil {
+			return nil, err
+		}
+		pr.Maintainers = strings.Split(maintainerString, " ")
+		prs = append(prs, pr)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
+	}
+
+	return prs, nil
+}
+
+func (sqlDB *sqlDBHelper) SetPRProcessed(number int, processed bool) error {
+	_, err := sqlDB.prDB.Exec("UPDATE pull_requests SET processed = $1 WHERE number = $2", processed, number)
+	return err
+}
+
+func (sqlDB *sqlDBHelper) SetPRPendingReview(number int, pendingReview bool) error {
+	_, err := sqlDB.prDB.Exec("UPDATE pull_requests SET pending_review = $1 WHERE number = $2", pendingReview, number)
+	return err
 }
 
 func (sqlDB *sqlDBHelper) parseMaintainer(maintainerFullString string) *Maintainer {
