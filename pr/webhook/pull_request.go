@@ -99,7 +99,6 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			for handle, ports := range handles {
 				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
 			}
-			body += "\nBy a harmless bot."
 			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
 			if err != nil {
 				log.Println(err)
