@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
@@ -15,19 +16,20 @@ import (
 )
 
 type Receiver struct {
-	listenAddr   string
+	server       *http.Server
 	hookSecret   []byte
 	production   bool
 	testing      bool
 	githubClient githubapi.Client
 	dbHelper     db.DBHelper
+	wg           sync.WaitGroup
 	members      *map[string]bool
 	membersLock  sync.RWMutex
 }
 
 func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool, dbHelper db.DBHelper) *Receiver {
 	return &Receiver{
-		listenAddr:   listenAddr,
+		server:       &http.Server{Addr: listenAddr},
 		hookSecret:   hookSecret,
 		production:   production,
 		githubClient: githubapi.NewClient(botSecret),
@@ -51,20 +53,25 @@ func (receiver *Receiver) Start() {
 			return
 		}
 
+		receiver.wg.Add(1)
+
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
 			return
 		}
 
 		if !receiver.checkMAC(body, sig) {
 			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
 			return
 		}
 
 		switch r.Header.Get("X-GitHub-Event") {
 		case "":
 			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
 			return
 		case "pull_request":
 			go receiver.handlePullRequest(body)
@@ -72,6 +79,10 @@ func (receiver *Receiver) Start() {
 			go receiver.handlePullRequestReview(body)
 		case "issue_comment":
 			go receiver.handleIssueComment(body)
+		default:
+			w.WriteHeader(http.StatusNoContent)
+			receiver.wg.Done()
+			return
 		}
 
 		w.WriteHeader(http.StatusNoContent)
@@ -79,7 +90,13 @@ func (receiver *Receiver) Start() {
 
 	go receiver.updateMembers()
 
-	http.ListenAndServe(receiver.listenAddr, mux)
+	receiver.server.Handler = mux
+	receiver.server.ListenAndServe()
+}
+
+func (receiver *Receiver) Shutdown() {
+	receiver.server.Shutdown(context.Background())
+	receiver.wg.Wait()
 }
 
 func (receiver *Receiver) updateMembers() {

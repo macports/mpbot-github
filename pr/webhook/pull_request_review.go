@@ -13,6 +13,10 @@ func (receiver *Receiver) handlePullRequestReview(body []byte) {
 		if r := recover(); r != nil {
 			log.Println(r)
 		}
+
+		if !receiver.testing {
+			receiver.wg.Done()
+		}
 	}()
 
 	event := &github.PullRequestReviewEvent{}

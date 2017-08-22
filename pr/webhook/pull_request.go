@@ -17,6 +17,10 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		if r := recover(); r != nil {
 			log.Println(r)
 		}
+
+		if !receiver.testing {
+			receiver.wg.Done()
+		}
 	}()
 
 	event := &github.PullRequestEvent{}
@@ -28,6 +32,8 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	number := *event.Number
 	owner := *event.Repo.Owner.Login
 	repo := *event.Repo.Name
+
+	log.Println("PR #" + strconv.Itoa(number) + " " + *event.Action)
 
 	ports, files, err := receiver.githubClient.ListChangedPortsAndFiles(owner, repo, number)
 	if err != nil {

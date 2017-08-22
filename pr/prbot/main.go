@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/macports/mpbot-github/pr/cron"
 	"github.com/macports/mpbot-github/pr/db"
@@ -40,5 +42,18 @@ func main() {
 	}
 	go cronManager.Start()
 
-	webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag, dbHelper).Start()
+	receiver := webhook.NewReceiver(*webhookAddr, hookSecret, botSecret, prodFlag, dbHelper)
+	go receiver.Start()
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// TODO: SIGTERM cancels PR processing.
+sigLoop:
+	for sig := range sigChan {
+		switch sig {
+		case syscall.SIGINT, syscall.SIGTERM:
+			receiver.Shutdown()
+			break sigLoop
+		}
+	}
 }

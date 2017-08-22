@@ -66,7 +66,7 @@ func TestHandlePullRequest(t *testing.T) {
 		{number: 1, sender: "jverne", title: "z: update to 1.1", body: "Fixes CVE-0000-0.", labels: []string{"maintainer: none", "type: update", "type: security fix"}},
 		{number: 2, sender: "jverne", title: "upx-devel: new port", labels: []string{"type: submission"}},
 		{number: 3, sender: "l2dy", title: "upx: update to 1.1", labels: []string{"maintainer", "maintainer: open", "type: update", "by: member"}},
-		{number: 3, sender: "jverne", title: "upx: update to 1.1", comment: "Notifying maintainers:\n@_l2dy for port upx.\n\nBy a harmless bot.", labels: []string{"maintainer: open", "type: update"}},
+		{number: 3, sender: "jverne", title: "upx: update to 1.1", comment: "Notifying maintainers:\n@_l2dy for port upx.\n", labels: []string{"maintainer: open", "type: update"}},
 		{number: 3, sender: "jverne", title: "upx: update to 1.1", body: "<!-- [skip notification] -->", labels: []string{"maintainer: open", "type: update"}},
 	}
 	for _, prt := range prTests {

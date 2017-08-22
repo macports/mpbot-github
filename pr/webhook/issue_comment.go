@@ -13,6 +13,10 @@ func (receiver *Receiver) handleIssueComment(body []byte) {
 		if r := recover(); r != nil {
 			log.Println(r)
 		}
+
+		if !receiver.testing {
+			receiver.wg.Done()
+		}
 	}()
 
 	event := &github.IssueCommentEvent{}
