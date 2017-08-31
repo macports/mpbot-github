@@ -3,6 +3,7 @@ package ci
 import (
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/macports/mpbot-github/ci/logger"
 )
@@ -35,11 +36,13 @@ func (worker *buildWorker) start() {
 				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-subports-fail", []byte(err.Error())}
 				continue
 			}
+			logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-subports", []byte(strings.Join(subports, "\n"))}
 			for _, subport := range subports {
 				statusString := "success"
 				DeactivateAllPorts()
 				portTmpDir := path.Join(worker.session.tmpDir, subport)
 				logFilename := path.Join(worker.session.tmpDir, "port-"+subport+"-dep-install.log")
+				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-dep-install-start", nil}
 				err := mpbbToLog("install-dependencies", subport, portTmpDir, logFilename)
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
@@ -63,6 +66,7 @@ func (worker *buildWorker) start() {
 				}
 
 				logFilename = path.Join(worker.session.tmpDir, "port-"+subport+"-install.log")
+				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-install-start", nil}
 				err = mpbbToLog("install-port", subport, portTmpDir, logFilename)
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
