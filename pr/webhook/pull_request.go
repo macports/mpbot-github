@@ -163,7 +163,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update to") {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
 		}
-		if cveRegexp.FindString(*event.PullRequest.Body) != "" {
+		if cveRegexp.FindString(*event.PullRequest.Title) != "" || cveRegexp.FindString(*event.PullRequest.Body) != "" {
 			typeLabels = appendIfUnique(typeLabels, "type: security fix")
 		}
 		typesFromBody := []string{"bugfix", "enhancement", "security fix"}
