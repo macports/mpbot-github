@@ -77,10 +77,8 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			if maintainer.GithubHandle != "" {
 				if maintainer.GithubHandle == *event.Sender.Login {
 					isPortMaintainer = true
-					if len(ports) < 2 || *files[i].Changes > 2 {
-						isOneMaintainer = true
-					}
-				} else if len(ports) < 2 || *files[i].Changes > 2 {
+					isOneMaintainer = true
+				} else {
 					handles[maintainer.GithubHandle] = append(handles[maintainer.GithubHandle], port)
 				}
 			}
