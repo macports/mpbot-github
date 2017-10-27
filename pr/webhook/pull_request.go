@@ -83,7 +83,8 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 				}
 			}
 		}
-		// Exclude minor changes like increase revision of dependents
+		// No maintainer label if not maintainer of one of the ports
+		// exclude minor changes like increase revision of dependents
 		if *files[i].Changes > 2 && !isPortMaintainer {
 			isMaintainer = false
 		}
