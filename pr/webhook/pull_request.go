@@ -142,6 +142,9 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		} else if !isAllSubmission && !isMaintainer {
 			// TODO: store in DB
 			maintainerLabels = append(maintainerLabels, "maintainer: requires approval")
+		}
+
+		if !isNomaintainer && !isAllSubmission && !isMaintainer {
 			receiver.dbHelper.SetPRPendingReview(number, true)
 		}
 
