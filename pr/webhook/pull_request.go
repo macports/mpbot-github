@@ -44,6 +44,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 	handles := make(map[string][]string)
 	// If unrecognized port was added
 	isSubmission := false
+	isAllSubmission := true
 	// If all ports changed are openmaintainer or nomaintainer
 	isOpenmaintainer := true
 	// If all ports changed have no maintainers
@@ -58,14 +59,12 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			// TODO: handle submission of duplicate ports
 			if err.Error() == "port not found" && *files[i].Status == "added" {
 				isSubmission = true
-				// Could be adding a -devel port, so keep the "maintainer" label
-				isNomaintainer = false
-				isOpenmaintainer = false
 				continue
 			}
 			log.Println("Error getting maintainer for port " + port + ": " + err.Error())
 			continue
 		}
+		isAllSubmission = false
 		isNomaintainer = isNomaintainer && portMaintainer.NoMaintainer
 		isOpenmaintainer = isOpenmaintainer && (portMaintainer.OpenMaintainer || portMaintainer.NoMaintainer)
 		if portMaintainer.NoMaintainer {
@@ -90,6 +89,10 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		}
 	}
 	isMaintainer = isOneMaintainer && isMaintainer
+	if isAllSubmission {
+		isNomaintainer = false
+		isOpenmaintainer = false
+	}
 
 	maintainers := make([]string, len(handles))
 	{
@@ -136,7 +139,7 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			maintainerLabels = append(maintainerLabels, "maintainer: none")
 		} else if isOpenmaintainer {
 			maintainerLabels = append(maintainerLabels, "maintainer: open")
-		} else if !isSubmission && !isMaintainer {
+		} else if !isAllSubmission && !isMaintainer {
 			// TODO: store in DB
 			maintainerLabels = append(maintainerLabels, "maintainer: requires approval")
 			receiver.dbHelper.SetPRPendingReview(number, true)
