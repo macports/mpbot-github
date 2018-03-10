@@ -176,7 +176,7 @@ func (sqlDB *sqlDBHelper) GetPR(number int) (*PullRequest, error) {
 
 func (sqlDB *sqlDBHelper) GetTimeoutPRs() ([]*PullRequest, error) {
 	var prs []*PullRequest
-	rows, err := sqlDB.wwwDB.Query("SELECT number, processed, pending_review, maintainers "+
+	rows, err := sqlDB.prDB.Query("SELECT number, processed, pending_review, maintainers "+
 		"FROM pull_requests "+
 		"WHERE created <= $1 AND pending_review = true", time.Now().AddDate(0, 0, -3))
 	if err != nil {
