@@ -54,6 +54,17 @@ func (client *githubClient) CreateComment(owner, repo string, number int, body *
 	return err
 }
 
+func (client *githubClient) AddAssignees(owner, repo string, number int, assignees []string) error {
+	_, _, err := client.Issues.AddAssignees(
+		client.ctx,
+		owner,
+		repo,
+		number,
+		assignees,
+	)
+	return err
+}
+
 func (client *githubClient) ReplaceLabels(owner, repo string, number int, labels []string) error {
 	_, _, err := client.Issues.ReplaceLabelsForIssue(
 		client.ctx,

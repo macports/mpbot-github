@@ -11,6 +11,7 @@ type Client interface {
 	GetPullRequest(owner, repo string, number int) (*github.PullRequest, error)
 	ListChangedPortsAndFiles(owner, repo string, number int) (ports []string, commitFiles []*github.CommitFile, err error)
 	CreateComment(owner, repo string, number int, body *string) error
+	AddAssignees(owner, repo string, number int, assignees []string) error
 	ReplaceLabels(owner, repo string, number int, labels []string) error
 	ListLabels(owner, repo string, number int) ([]string, error)
 	ListOrgMembers(org string) ([]*github.User, error)

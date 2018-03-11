@@ -115,6 +115,10 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 			body := "Notifying maintainers:\n"
 			for handle, ports := range handles {
 				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
+				err = receiver.githubClient.AddAssignees(owner, repo, number, []string{handle})
+				if err != nil {
+					log.Println(err)
+				}
 			}
 			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
 			if err != nil {

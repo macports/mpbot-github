@@ -138,6 +138,10 @@ func (stub *stubGitHubClient) CreateComment(owner, repo string, number int, body
 	return nil
 }
 
+func (client *stubGitHubClient) AddAssignees(owner, repo string, number int, assignees []string) error {
+	return nil
+}
+
 func (stub *stubGitHubClient) ReplaceLabels(owner, repo string, number int, labels []string) error {
 	stub.newLabels = labels
 	return nil
