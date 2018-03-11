@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -116,6 +117,7 @@ func (receiver *Receiver) updateMembers() {
 			members[login] = true
 		}
 		if len(members) > 0 {
+			log.Println("Updating list of members, got", len(members), "members")
 			receiver.membersLock.Lock()
 			receiver.members = &members
 			receiver.membersLock.Unlock()
