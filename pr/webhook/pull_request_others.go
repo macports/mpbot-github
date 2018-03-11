@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
-func (receiver *Receiver) handlePullRequestReview(body []byte) {
+func (receiver *Receiver) handleOtherPullRequestEvents(eventType string, body []byte) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println(r)
@@ -19,17 +19,34 @@ func (receiver *Receiver) handlePullRequestReview(body []byte) {
 		}
 	}()
 
-	event := &github.PullRequestReviewEvent{}
-	err := json.Unmarshal(body, event)
-	if err != nil {
-		log.Println(err)
+	var number int
+	var sender string
+
+	switch eventType {
+	case "pull_request_review":
+		event := &github.PullRequestReviewEvent{}
+		err := json.Unmarshal(body, event)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		number = *event.PullRequest.Number
+		sender = *event.Sender.Login
+	case "issue_comment":
+		event := &github.IssueCommentEvent{}
+		err := json.Unmarshal(body, event)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		number = *event.Issue.Number
+		sender = *event.Sender.Login
+	default:
 		return
 	}
 
-	number := *event.PullRequest.Number
-	sender := *event.Sender.Login
-
-	// TODO: refactor, share with IssueComment
 	pr, err := receiver.dbHelper.GetPR(number)
 	if err != nil {
 		log.Println(err)

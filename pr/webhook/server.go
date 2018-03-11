@@ -68,17 +68,16 @@ func (receiver *Receiver) Start() {
 			return
 		}
 
-		switch r.Header.Get("X-GitHub-Event") {
+		eventType := r.Header.Get("X-GitHub-Event")
+		switch eventType {
 		case "":
 			w.WriteHeader(http.StatusBadRequest)
 			receiver.wg.Done()
 			return
 		case "pull_request":
 			go receiver.handlePullRequest(body)
-		case "pull_request_review":
-			go receiver.handlePullRequestReview(body)
-		case "issue_comment":
-			go receiver.handleIssueComment(body)
+		case "pull_request_review", "issue_comment":
+			go receiver.handleOtherPullRequestEvents(eventType, body)
 		default:
 			w.WriteHeader(http.StatusNoContent)
 			receiver.wg.Done()
