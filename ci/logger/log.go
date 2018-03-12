@@ -5,10 +5,12 @@ import (
 	"mime/multipart"
 	"os"
 	"time"
+
+	"github.com/macports/mpbot-github/ci/logger/constants"
 )
 
 // This is the actual logger used by the CI bot
-var GlobalLogger *Logger = newLogger(os.Stdout)
+var GlobalLogger = newLogger(os.Stdout)
 
 func init() {
 	go GlobalLogger.Run()
@@ -38,6 +40,7 @@ func newLogger(w io.Writer) *Logger {
 		mimeWriter: multipart.NewWriter(w),
 		quitChan:   make(chan byte),
 	}
+	logger.mimeWriter.SetBoundary(constants.MIMEBoundary)
 	logger.remoteLogger = newRemoteLogger(logger)
 	return logger
 }

@@ -33,7 +33,11 @@ func main() {
 
 	dbHelper, err := db.NewDBHelper()
 	if err != nil {
-		log.Fatal(err)
+		if prodFlag {
+			log.Fatal(err)
+		} else {
+			log.Println(err)
+		}
 	}
 
 	cronManager := cron.Manager{

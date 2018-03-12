@@ -2,9 +2,15 @@ package webhook
 
 import (
 	"context"
+	"crypto"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
+	"encoding/pem"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,15 +23,17 @@ import (
 )
 
 type Receiver struct {
-	server       *http.Server
-	hookSecret   []byte
-	production   bool
-	testing      bool
-	githubClient githubapi.Client
-	dbHelper     db.DBHelper
-	wg           sync.WaitGroup
-	members      *map[string]bool
-	membersLock  sync.RWMutex
+	server           *http.Server
+	hookSecret       []byte
+	production       bool
+	testing          bool
+	githubClient     githubapi.Client
+	dbHelper         db.DBHelper
+	wg               sync.WaitGroup
+	members          *map[string]bool
+	membersLock      sync.RWMutex
+	travisPubKey     *rsa.PublicKey
+	travisPubKeyLock sync.RWMutex
 }
 
 func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, production bool, dbHelper db.DBHelper) *Receiver {
@@ -88,7 +96,54 @@ func (receiver *Receiver) Start() {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
+	mux.HandleFunc("/travis", func(w http.ResponseWriter, r *http.Request) {
+		sigStr := r.Header.Get("Signature")
+
+		sig, err := base64.StdEncoding.DecodeString(sigStr)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		receiver.wg.Add(1)
+
+		body := []byte(r.FormValue("payload"))
+
+		if len(body) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
+			return
+		}
+
+		hashed := sha1.Sum(body)
+		receiver.travisPubKeyLock.RLock()
+		err = rsa.VerifyPKCS1v15(receiver.travisPubKey, crypto.SHA1, hashed[:], sig)
+		receiver.travisPubKeyLock.RUnlock()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
+			return
+		}
+
+		var payload TravisWebhookPayload
+
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			receiver.wg.Done()
+			return
+		}
+
+		go receiver.handleTravisWebhook(payload)
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	go receiver.updateMembers()
+	receiver.updateTravisPubKey()
 
 	receiver.server.Handler = mux
 	receiver.server.ListenAndServe()
@@ -97,6 +152,27 @@ func (receiver *Receiver) Start() {
 func (receiver *Receiver) Shutdown() {
 	receiver.server.Shutdown(context.Background())
 	receiver.wg.Wait()
+}
+
+func (receiver *Receiver) updateTravisPubKey() {
+	const travisPubKeyPEM = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvtjdLkS+FP+0fPC09j25\ny/PiuYDDivIT86COVedvlElk99BBYTrqNaJybxjXbIZ1Q6xFNhOY+iTcBr4E1zJu\ntizF3Xi0V9tOuP/M8Wn4Y/1lCWbQKlWrNQuqNBmhovF4K3mDCYswVbpgTmp+JQYu\nBm9QMdieZMNry5s6aiMA9aSjDlNyedvSENYo18F+NYg1J0C0JiPYTxheCb4optr1\n5xNzFKhAkuGs4XTOA5C7Q06GCKtDNf44s/CVE30KODUxBi0MCKaxiXw/yy55zxX2\n/YdGphIyQiA5iO1986ZmZCLLW8udz9uhW5jUr3Jlp9LbmphAC61bVSf4ou2YsJaN\n0QIDAQAB\n-----END PUBLIC KEY-----"
+
+	p, _ := pem.Decode([]byte(travisPubKeyPEM))
+	if p == nil || p.Type != "PUBLIC KEY" {
+		log.Println("travis: invalid public key")
+		return
+	}
+
+	travisPubKey, err := x509.ParsePKIXPublicKey(p.Bytes)
+	if err != nil {
+		return
+	}
+
+	if pubKey, ok := travisPubKey.(*rsa.PublicKey); ok {
+		receiver.travisPubKeyLock.Lock()
+		receiver.travisPubKey = pubKey
+		receiver.travisPubKeyLock.Unlock()
+	}
 }
 
 func (receiver *Receiver) updateMembers() {

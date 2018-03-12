@@ -1,0 +1,3 @@
+package constants
+
+const MIMEBoundary = "9bba227c544541bbafbe7a4fc806bab5489eae04f16d9303cac42e9eff2e"
