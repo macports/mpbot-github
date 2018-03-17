@@ -42,7 +42,7 @@ func (worker *buildWorker) start() {
 				DeactivateAllPorts()
 				portTmpDir := path.Join(worker.session.tmpDir, subport)
 				logFilename := path.Join(worker.session.tmpDir, "port-"+subport+"-dep-install.log")
-				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-dep-install-start", nil}
+				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + subport + "-dep-install-start", nil}
 				err := mpbbToLog("install-dependencies", subport, portTmpDir, logFilename)
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
@@ -58,7 +58,7 @@ func (worker *buildWorker) start() {
 				}
 				if err != nil {
 					logger.GlobalLogger.LogChan <- &logger.LogFile{
-						FieldName: "port-" + port + "-dep-install-output-" + statusString,
+						FieldName: "port-" + subport + "-dep-install-output-" + statusString,
 						Filename:  logFilename,
 						Big:       true,
 					}
@@ -66,7 +66,7 @@ func (worker *buildWorker) start() {
 				}
 
 				logFilename = path.Join(worker.session.tmpDir, "port-"+subport+"-install.log")
-				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-install-start", nil}
+				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + subport + "-install-start", nil}
 				err = mpbbToLog("install-port", subport, portTmpDir, logFilename)
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
@@ -81,7 +81,7 @@ func (worker *buildWorker) start() {
 					Filename:  path.Join(portTmpDir, "logs/ports-progress.txt"),
 				}
 				logger.GlobalLogger.LogChan <- &logger.LogFile{
-					FieldName: "port-" + port + "-install-output-" + statusString,
+					FieldName: "port-" + subport + "-install-output-" + statusString,
 					Filename:  logFilename,
 					Big:       true,
 				}
