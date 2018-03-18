@@ -169,7 +169,7 @@ func (receiver *Receiver) handleTravisWebhook(payload TravisWebhookPayload) {
 	}
 
 	if timeOut {
-		comment += "The build timed out."
+		comment += "\nThe build timed out."
 	}
 
 	receiver.githubClient.CreateComment(
