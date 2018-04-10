@@ -56,6 +56,7 @@ sigLoop:
 	for sig := range sigChan {
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
+			signal.Stop(sigChan)
 			receiver.Shutdown()
 			break sigLoop
 		}
