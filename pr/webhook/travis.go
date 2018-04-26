@@ -154,7 +154,7 @@ func (receiver *Receiver) handleTravisWebhook(payload TravisWebhookPayload) {
 				lintDone = true
 			}
 			if strings.HasSuffix(pName, "-pastebin") {
-				pastebinRegex := regexp.MustCompile(`^port-(.*)(-dep)?-install-output-(success|fail)-pastebin$`)
+				pastebinRegex := regexp.MustCompile(`^port-(.*?)(-dep)?-install-output-(success|fail)-pastebin$`)
 				pbInfo := pastebinRegex.FindStringSubmatch(pName)
 				if pbInfo == nil {
 					continue
