@@ -10,8 +10,7 @@ import (
 // conflicts.
 func DeactivateAllPorts() {
 	deactivateCmd := exec.Command("port", "deactivate", "active")
-	deactivateCmd.Start()
-	deactivateCmd.Wait()
+	deactivateCmd.Run()
 }
 
 // List all subports of a given port.
