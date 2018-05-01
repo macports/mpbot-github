@@ -59,8 +59,10 @@ func (r *remoteLogger) run() {
 						break
 					}
 					// Max 8 MiB
-					if fileSize := fileInfo.Size(); fileSize > 8*1024*1024 {
-						file.Seek(fileSize-8*1024*1024, 0)
+					const trimNote = "*log trimmed*\n"
+					if fileSize := fileInfo.Size(); fileSize > 8*1024*1024-int64(len(trimNote)) {
+						file.Seek(fileSize-8*1024*1024+int64(len(trimNote)), 0)
+						io.WriteString(writer, trimNote)
 					}
 					io.Copy(writer, file)
 					file.Close()
