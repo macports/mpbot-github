@@ -1,6 +1,9 @@
 package ci
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -76,6 +79,30 @@ func (worker *buildWorker) start() {
 						}
 					}
 				}
+
+				// DEBUG START
+				logFileInfo, err := os.Stat(logFilename)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				file, err := os.Open(logFilename)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				// Max 4 KiB
+				if fileSize := logFileInfo.Size(); fileSize > 4*1024 {
+					file.Seek(fileSize-4*1024, 0)
+				}
+				logTail, err := ioutil.ReadAll(file)
+				file.Close()
+				logger.GlobalLogger.LogChan <- &logger.LogText{
+					FieldName: "port-" + subport + "-install-output-tail",
+					Text:      logTail,
+				}
+				// DEBUG END
+
 				logger.GlobalLogger.LogChan <- &logger.LogFile{
 					FieldName: "port-" + subport + "-install-summary-" + statusString,
 					Filename:  path.Join(portTmpDir, "logs/ports-progress.txt"),
