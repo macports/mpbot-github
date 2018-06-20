@@ -21,12 +21,12 @@ func mpbbToLog(command, port, workDir, logFilePath string) error {
 	}
 	defer logFile.Close()
 	logWriter := bufio.NewWriter(logFile)
+	defer logWriter.Flush()
 	// other logs in workDir/logs
 	mpbbCmd.Stdout = logWriter
 	mpbbCmd.Stderr = logWriter
 	if err = mpbbCmd.Run(); err != nil {
 		return err
 	}
-	logWriter.Flush()
 	return nil
 }
