@@ -27,6 +27,10 @@ func mpbbToLog(command, port, workDir, logFilePath string) error {
 	if err = mpbbCmd.Run(); err != nil {
 		return err
 	}
-	logWriter.Flush()
-	return nil
+	err = logWriter.Flush()
+	if err != nil {
+		return err
+	}
+
+	return logFile.Sync()
 }

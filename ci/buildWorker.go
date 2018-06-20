@@ -77,6 +77,9 @@ func (worker *buildWorker) start() {
 							returnCode = 1
 							statusString = "fail"
 						}
+					} else {
+						log.Println(err)
+						continue
 					}
 				}
 
