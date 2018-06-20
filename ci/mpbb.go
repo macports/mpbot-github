@@ -2,6 +2,7 @@ package ci
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"os/exec"
 )
@@ -21,9 +22,11 @@ func mpbbToLog(command, port, workDir, logFilePath string) error {
 	}
 	defer logFile.Close()
 	logWriter := bufio.NewWriter(logFile)
+
+	debugWriter := io.MultiWriter(os.Stdout, logWriter)
 	// other logs in workDir/logs
-	mpbbCmd.Stdout = logWriter
-	mpbbCmd.Stderr = logWriter
+	mpbbCmd.Stdout = debugWriter
+	mpbbCmd.Stderr = debugWriter
 	if err = mpbbCmd.Run(); err != nil {
 		return err
 	}
