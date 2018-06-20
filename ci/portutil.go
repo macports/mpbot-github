@@ -9,7 +9,7 @@ import (
 // is needed across builds. It should be able to avoid
 // conflicts.
 func DeactivateAllPorts() {
-	deactivateCmd := exec.Command("port", "deactivate", "active")
+	deactivateCmd := exec.Command("port", "-fp", "deactivate", "active")
 	deactivateCmd.Run()
 }
 
