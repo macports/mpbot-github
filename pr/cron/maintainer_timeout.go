@@ -18,7 +18,7 @@ func (manager *Manager) Start() {
 	manager.MaintainerTimeout()
 	for {
 		select {
-		case <-time.After(12 * time.Hour):
+		case <-time.After(6 * time.Hour):
 			manager.MaintainerTimeout()
 		}
 	}
