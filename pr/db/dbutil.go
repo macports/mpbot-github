@@ -144,8 +144,7 @@ func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error
 
 	err = rows.Err()
 	if err != nil {
-		//TODO: log in caller
-		log.Println(err)
+		return nil, err
 	}
 
 	if !rowExist {
