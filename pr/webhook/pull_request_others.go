@@ -5,7 +5,6 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/google/go-github/github"
 )
@@ -48,9 +47,9 @@ func (receiver *Receiver) handleOtherPullRequestEvents(eventType string, body []
 		receiver.membersLock.RUnlock()
 		if members != nil {
 			_, isMember := (*members)[*event.Sender.Login]
-			if isMember && strings.Contains(*event.Comment.Body, "@macportsbot") { // TODO: read bot user from ENV
+			if isMember {
 				body := *event.Comment.Body
-				if botMentioned, _ := regexp.MatchString(`@macportsbot\s`, body); botMentioned {
+				if botMentioned, _ := regexp.MatchString(`@macportsbot\s`, body); botMentioned { // TODO: read bot user from ENV
 					if doRetry, _ := regexp.MatchString(`@macportsbot\s+retry`, body); doRetry { // TODO: test compile patterns
 						pr, err := receiver.githubClient.GetPullRequest(*event.Repo.Owner.Login, *event.Repo.Name, *event.Issue.Number)
 						if err != nil {
