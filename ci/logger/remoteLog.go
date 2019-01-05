@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/hashicorp/go-retryablehttp"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
 var pasteURL = &url.URL{

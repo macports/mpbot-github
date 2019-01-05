@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/macports/mpbot-github/pr/db"
 	"github.com/macports/mpbot-github/pr/githubapi"
 )
@@ -27,6 +28,7 @@ type Receiver struct {
 	hookSecret       []byte
 	production       bool
 	testing          bool
+	httpClient       *retryablehttp.Client
 	githubClient     githubapi.Client
 	dbHelper         db.DBHelper
 	wg               sync.WaitGroup
@@ -41,6 +43,7 @@ func NewReceiver(listenAddr string, hookSecret []byte, botSecret string, product
 		server:       &http.Server{Addr: listenAddr},
 		hookSecret:   hookSecret,
 		production:   production,
+		httpClient:   retryablehttp.NewClient(),
 		githubClient: githubapi.NewClient(botSecret),
 		dbHelper:     dbHelper,
 	}

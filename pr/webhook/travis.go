@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"mime/multipart"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/macports/mpbot-github/ci/logger/constants"
 )
 
@@ -77,7 +77,7 @@ func (receiver *Receiver) handleTravisWebhook(payload TravisWebhookPayload) {
 	log.Println("Processing " + strconv.Itoa(len(payload.Matrix)) + " job(s)")
 
 	for _, job := range payload.Matrix {
-		req, err := http.NewRequest(
+		req, err := retryablehttp.NewRequest(
 			"GET",
 			"https://api.travis-ci.org/job/"+strconv.Itoa(job.ID)+"/log",
 			nil,
@@ -91,7 +91,7 @@ func (receiver *Receiver) handleTravisWebhook(payload TravisWebhookPayload) {
 
 		log.Println("Fetching logs for job #" + strconv.Itoa(job.ID))
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := receiver.httpClient.Do(req)
 		if err != nil {
 			continue
 		}
