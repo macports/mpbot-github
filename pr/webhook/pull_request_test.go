@@ -206,11 +206,3 @@ func (stub *stubDBHelper) SetPRProcessed(number int, processed bool) error {
 func (stub *stubDBHelper) SetPRPendingReview(number int, pendingReview bool) error {
 	return nil
 }
-
-func ptrOfStr(s string) *string {
-	return &s
-}
-
-func ptrOfInt(s int) *int {
-	return &s
-}

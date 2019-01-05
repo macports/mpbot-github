@@ -3,7 +3,9 @@ package webhook
 import (
 	"encoding/json"
 	"log"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/google/go-github/github"
 )
@@ -39,6 +41,33 @@ func (receiver *Receiver) handleOtherPullRequestEvents(eventType string, body []
 		if err != nil {
 			log.Println(err)
 			return
+		}
+
+		receiver.membersLock.RLock()
+		members := receiver.members
+		receiver.membersLock.RUnlock()
+		if members != nil {
+			_, isMember := (*members)[*event.Sender.Login]
+			if isMember && strings.Contains(*event.Comment.Body, "@macportsbot") { // TODO: read bot user from ENV
+				body := *event.Comment.Body
+				if botMentioned, _ := regexp.MatchString(`@macportsbot\s`, body); botMentioned {
+					if doRetry, _ := regexp.MatchString(`@macportsbot\s+retry`, body); doRetry { // TODO: test compile patterns
+						pr, err := receiver.githubClient.GetPullRequest(*event.Repo.Owner.Login, *event.Repo.Name, *event.Issue.Number)
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						fakeEvent := &github.PullRequestEvent{
+							Action:      ptrOfStr("opened"),
+							Number:      event.Issue.Number,
+							Repo:        event.Repo,
+							Sender:      event.Issue.User,
+							PullRequest: pr,
+						}
+						receiver.processPullRequest(fakeEvent)
+					}
+				}
+			}
 		}
 
 		number = *event.Issue.Number

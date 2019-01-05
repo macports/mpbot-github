@@ -29,6 +29,11 @@ func (receiver *Receiver) handlePullRequest(body []byte) {
 		log.Println(err)
 		return
 	}
+
+	receiver.processPullRequest(event)
+}
+
+func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 	number := *event.Number
 	owner := *event.Repo.Owner.Login
 	repo := *event.Repo.Name
