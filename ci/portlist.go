@@ -17,7 +17,7 @@ func GetChangedPortList() ([]string, error) {
 		return nil, err
 	}
 	ports := make([]string, 0, 1)
-	gitRegexp := regexp.MustCompile(`[AM]\t[^\._/][^/]*/([^/]+)/Portfile`)
+	gitRegexp := regexp.MustCompile(`[AM]\t[^\._/][^/]*/([^/]+)/Portfile`) // Ignore hidden and _* top directories
 	stdoutScanner := bufio.NewScanner(stdout)
 	for stdoutScanner.Scan() {
 		line := stdoutScanner.Text()
