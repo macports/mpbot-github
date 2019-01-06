@@ -39,8 +39,8 @@ func (worker *buildWorker) start() {
 			logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-subports", []byte(strings.Join(subports, "\n"))}
 			for _, subport := range subports {
 				statusString := "success"
-				DeactivateAllPorts()
 				portTmpDir := path.Join(worker.session.tmpDir, subport)
+				mpbbToLog("cleanup", "", portTmpDir, "cleanup.log")
 				logFilename := path.Join(worker.session.tmpDir, "port-"+subport+"-dep-install.log")
 				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + subport + "-dep-install-start", nil}
 				err := mpbbToLog("install-dependencies", subport, portTmpDir, logFilename)

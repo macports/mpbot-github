@@ -6,6 +6,28 @@ import (
 	"os/exec"
 )
 
+// List all subports of a given port.
+func ListSubports(port string) ([]string, error) {
+	listCmd := exec.Command("mpbb", "list-subports", "--archive-site=", "--archive-site-private=", port)
+	stdout, err := listCmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err = listCmd.Start(); err != nil {
+		return nil, err
+	}
+	subports := make([]string, 0, 1)
+	stdoutScanner := bufio.NewScanner(stdout)
+	for stdoutScanner.Scan() {
+		line := stdoutScanner.Text()
+		subports = append(subports, line)
+	}
+	if err = listCmd.Wait(); err != nil {
+		return nil, err
+	}
+	return subports, nil
+}
+
 // mpbbToLog executes `mpbb` and saves output to a file at logFilePath.
 func mpbbToLog(command, port, workDir, logFilePath string) error {
 	var mpbbCmd *exec.Cmd
