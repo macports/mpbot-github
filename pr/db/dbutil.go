@@ -151,11 +151,7 @@ func (sqlDB *sqlDBHelper) GetPortMaintainer(port string) (*PortMaintainer, error
 		return nil, errors.New("port not found")
 	}
 
-	if maintainer.Primary == nil {
-		if len(maintainer.Others) < 1 {
-			return nil, errors.New("no maintainers found")
-		}
-
+	if maintainer.Primary == nil && len(maintainer.Others) > 0 {
 		maintainer.Primary = maintainer.Others[0]
 		maintainer.Others = maintainer.Others[1:]
 	}
