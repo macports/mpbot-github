@@ -28,9 +28,9 @@ func GetChangedPortList() ([]string, error) {
 		line := stdoutScanner.Text()
 		var match []string
 		if match = portGrep.FindStringSubmatch(line); match == nil {
-			continue
-		} else if match = renameGrep.FindStringSubmatch(line); match == nil {
-			continue
+			if match = renameGrep.FindStringSubmatch(line); match == nil {
+				continue
+			}
 		}
 		port := match[1]
 		if _, ok := portsFound[port]; !ok {
