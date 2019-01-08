@@ -43,10 +43,11 @@ func (client *githubClient) ListChangedPortsAndFiles(owner, repo string, number 
 		}
 		match := portGrep.FindStringSubmatch(fileName)
 		if match != nil {
-			if idx, ok := portsFound[match[1]]; !ok {
-				ports = append(ports, match[1])
+			port := match[1]
+			if idx, ok := portsFound[port]; !ok {
+				ports = append(ports, port)
 				commitFiles = append(commitFiles, file)
-				portsFound[match[1]] = len(ports) - 1
+				portsFound[port] = len(ports) - 1
 			} else {
 				if match[2] == "Portfile" {
 					commitFiles[idx] = file

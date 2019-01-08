@@ -32,9 +32,10 @@ func GetChangedPortList() ([]string, error) {
 		} else if match = renameGrep.FindStringSubmatch(line); match == nil {
 			continue
 		}
-		if _, ok := portsFound[match[1]]; !ok {
-			portsFound[match[1]] = true
-			ports = append(ports, match[1])
+		port := match[1]
+		if _, ok := portsFound[port]; !ok {
+			portsFound[port] = true
+			ports = append(ports, port)
 		}
 	}
 	if err = gitCmd.Wait(); err != nil {
