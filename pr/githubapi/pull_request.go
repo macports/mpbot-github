@@ -33,16 +33,25 @@ func (client *githubClient) ListChangedPortsAndFiles(owner, repo string, number 
 		opt.Page = resp.NextPage
 	}
 
-	portfileRegexp := regexp.MustCompile(`[^\._/][^/]*/([^/]+)/Portfile`) // Ignore hidden and _* top directories
+	portGrep := regexp.MustCompile(`[^\._/][^/]*/([^/]+)/(Portfile|files/)`) // Ignore hidden and _* top directories
+
+	portsFound := make(map[string]int)
 	for _, file := range allFiles {
 		fileName := *file.Filename
 		if *file.Status == "renamed" {
 			fileName = *file.PreviousFilename
 		}
-		match := portfileRegexp.FindStringSubmatch(fileName)
+		match := portGrep.FindStringSubmatch(fileName)
 		if match != nil {
-			ports = append(ports, match[1])
-			commitFiles = append(commitFiles, file)
+			if idx, ok := portsFound[match[1]]; !ok {
+				ports = append(ports, match[1])
+				commitFiles = append(commitFiles, file)
+				portsFound[match[1]] = len(ports) - 1
+			} else {
+				if match[2] == "Portfile" {
+					commitFiles[idx] = file
+				}
+			}
 		}
 	}
 	return

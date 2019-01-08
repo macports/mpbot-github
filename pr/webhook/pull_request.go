@@ -61,8 +61,8 @@ func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 	for i, port := range ports {
 		portMaintainer, err := receiver.dbHelper.GetPortMaintainer(port)
 		if err != nil {
-			// TODO: handle submission of duplicate ports
-			if err.Error() == "port not found" && *files[i].Status == "added" {
+			// TODO: warn about submission of duplicate ports in different category
+			if err.Error() == "port not found" && !strings.Contains(*files[i].Filename, "/files/") && *files[i].Status == "added" {
 				isSubmission = true
 				continue
 			}
