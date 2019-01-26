@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -12,24 +13,30 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
-var pasteURL = &url.URL{
-	Scheme: "https",
-	Host:   "paste.macports.org",
-	Path:   "/",
-}
-
 type remoteLogger struct {
 	logBigFileChan chan *LogFile
 	parent         *Logger
 	quitChan       chan byte
+	pasteURL       *url.URL
 	httpClient     *retryablehttp.Client
 }
 
 func newRemoteLogger(parent *Logger) *remoteLogger {
+	defaultPasteURL, _ := url.Parse("https://paste.macports.org/")
+	pasteURL := defaultPasteURL
+	if envPasteURL := os.Getenv("PASTE_URL"); envPasteURL != "" {
+		var err error
+		pasteURL, err = url.Parse(envPasteURL)
+		if err != nil {
+			log.Println(err)
+			pasteURL = defaultPasteURL
+		}
+	}
 	r := &remoteLogger{
 		logBigFileChan: make(chan *LogFile, 4),
 		parent:         parent,
 		quitChan:       make(chan byte),
+		pasteURL:       pasteURL,
 		httpClient:     retryablehttp.NewClient(),
 	}
 	r.httpClient.Logger = nil
@@ -78,7 +85,7 @@ func (r *remoteLogger) run() {
 			file.Close()
 			mimeWriter.Close()
 			postForm := bytes.NewReader(buf.Bytes())
-			resp, iErr := r.httpClient.Post(pasteURL.String(), mimeWriter.FormDataContentType(), postForm)
+			resp, iErr := r.httpClient.Post(r.pasteURL.String(), mimeWriter.FormDataContentType(), postForm)
 			if iErr != nil {
 				err = iErr
 				break
@@ -89,7 +96,7 @@ func (r *remoteLogger) run() {
 				err = errors.New("missing Location header")
 				break
 			}
-			u, iErr := pasteURL.Parse(loc)
+			u, iErr := r.pasteURL.Parse(loc)
 			if iErr != nil {
 				err = iErr
 				break
