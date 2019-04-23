@@ -174,13 +174,13 @@ func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 		if isSubmission {
 			typeLabels = appendIfUnique(typeLabels, "type: submission")
 		}
-		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update to") {
+		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update") || strings.HasPrefix(strings.ToLower(*event.PullRequest.Title), "update") {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
 		}
 		if cveRegexp.FindString(*event.PullRequest.Title) != "" || cveRegexp.FindString(*event.PullRequest.Body) != "" {
 			typeLabels = appendIfUnique(typeLabels, "type: security fix")
 		}
-		typesFromBody := []string{"bugfix", "enhancement", "security fix"}
+		typesFromBody := []string{"bugfix", "enhancement", "security fix", "update"}
 		for _, t := range typesFromBody {
 			if strings.Contains(*event.PullRequest.Body, "[x] "+t) {
 				typeLabels = appendIfUnique(typeLabels, "type: "+t)
