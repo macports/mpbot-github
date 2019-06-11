@@ -163,9 +163,12 @@ func (receiver *Receiver) handleTravisWebhook(payload TravisWebhookPayload) {
 				if pbInfo[2] == "-dep" {
 					comment += "'s dependencies"
 				}
+				if pbInfo[3] == "fail" {
+					pbInfo[3] = "**" + pbInfo[3] + "**"
+				}
 				pasteLink := strings.SplitN(string(content), "\n", 2)
 				if len(pasteLink) > 0 {
-					comment += " **" + pbInfo[3] + "** on " + job.Config.OsxImage + ". [Log](" + pasteLink[0] + ")\n"
+					comment += " " + pbInfo[3] + " on " + job.Config.OsxImage + ". [Log](" + pasteLink[0] + ")\n"
 				}
 			}
 		}
