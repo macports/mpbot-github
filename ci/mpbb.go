@@ -7,8 +7,8 @@ import (
 )
 
 // List all subports of a given port.
-func ListSubports(port string) ([]string, error) {
-	listCmd := exec.Command("mpbb", "list-subports", "--archive-site=", "--archive-site-private=", port)
+func ListSubports(port, workDir string) ([]string, error) {
+	listCmd := exec.Command("mpbb", "--work-dir", workDir, "list-subports", "--archive-site=", "--archive-site-private=", port)
 	stdout, err := listCmd.StdoutPipe()
 	if err != nil {
 		return nil, err
