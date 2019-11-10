@@ -30,7 +30,8 @@ func (worker *buildWorker) start() {
 				worker.quitChan <- returnCode
 				return
 			}
-			subports, err := ListSubports(port)
+			mpbbTmpDir := path.Join(worker.session.tmpDir, "mpbb")
+			subports, err := ListSubports(port, mpbbTmpDir)
 			if err != nil {
 				returnCode = 1
 				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + port + "-subports-fail", []byte(err.Error())}
