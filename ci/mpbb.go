@@ -29,13 +29,17 @@ func ListSubports(port, workDir string) ([]string, error) {
 }
 
 // mpbbToLog executes `mpbb` and saves output to a file at logFilePath.
-func mpbbToLog(command, port, workDir, logFilePath string) error {
+func mpbbToLog(command, port, workDir, logFilePath string, commandArg ...string) error {
 	var mpbbCmd *exec.Cmd
+	args := make([]string, 0, 2)
 	if workDir != "" {
-		mpbbCmd = exec.Command("mpbb", "--work-dir", workDir, command, port)
-	} else {
-		mpbbCmd = exec.Command("mpbb", command, port)
+		args = append(args, "--work-dir", workDir)
 	}
+	args = append(args, command)
+	args = append(args, commandArg...)
+	args = append(args, port)
+
+	mpbbCmd = exec.Command("mpbb", args...)
 
 	logFile, err := os.Create(logFilePath)
 	if err != nil {

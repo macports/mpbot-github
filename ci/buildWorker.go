@@ -68,7 +68,7 @@ func (worker *buildWorker) start() {
 
 				logFilename = path.Join(worker.session.tmpDir, "port-"+subport+"-install.log")
 				logger.GlobalLogger.LogChan <- &logger.LogText{"port-" + subport + "-install-start", nil}
-				err = mpbbToLog("install-port", subport, portTmpDir, logFilename)
+				err = mpbbToLog("install-port", subport, portTmpDir, logFilename, "--source")
 				if err != nil {
 					if eerr, ok := err.(*exec.ExitError); ok {
 						if !eerr.Success() {
