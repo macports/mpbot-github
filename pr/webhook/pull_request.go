@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v28/github"
 )
 
 var cveRegexp = regexp.MustCompile(`CVE-\d{4}-\d+`)

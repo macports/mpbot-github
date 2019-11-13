@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v28/github"
 )
 
 func (client *githubClient) GetPullRequest(owner, repo string, number int) (*github.PullRequest, error) {

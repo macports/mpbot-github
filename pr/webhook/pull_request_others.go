@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v28/github"
 )
 
 func (receiver *Receiver) handleOtherPullRequestEvents(eventType string, body []byte) {
