@@ -1,6 +1,6 @@
 package githubapi
 
-import "github.com/google/go-github/github"
+import "github.com/google/go-github/v28/github"
 
 func (client *githubClient) ListOrgMembers(org string) ([]*github.User, error) {
 	var allMembers []*github.User
