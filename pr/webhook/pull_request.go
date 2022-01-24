@@ -117,17 +117,44 @@ func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 			mentionSymbol = "@"
 		}
 		if len(handles) > 0 && !strings.Contains(*event.PullRequest.Body, "[skip notification]") {
-			body := "Notifying maintainers:\n"
+			// GitHub will only notify the first 50 handles in a single comment
+			const mentionLimit = 50
+
+			// i counts from 0 to len(handles)
+			// Use (i % mentionLimit) to limit each comment to containing
+			// at most (mentionLimit) handles
+			i := 0
+
+			totalBatches := (len(handles) + mentionLimit - 1) / mentionLimit
+
+			var body string
+
 			for handle, ports := range handles {
+				// Increment counter for each handle
+				i++
+
+				// Initialize body if first handle for this batch
+				if (i % mentionLimit) == 1 {
+					currentBatch := (i + mentionLimit - 1) / mentionLimit
+					body = "Notifying maintainers (batch " + strconv.Itoa(currentBatch) +
+						" of " + strconv.Itoa(totalBatches) + "):\n"
+				}
+
 				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
 				err = receiver.githubClient.AddAssignees(owner, repo, number, []string{handle})
 				if err != nil {
 					log.Println(err)
 				}
-			}
-			err = receiver.githubClient.CreateComment(owner, repo, number, &body)
-			if err != nil {
-				log.Println(err)
+
+				// Create comment if last handle for this batch
+				// (either once body contains (mentionLimit) handles,
+				// or when there are no handles left)
+				if ((i % mentionLimit) == 0) || (i == len(handles)) {
+					err = receiver.githubClient.CreateComment(owner, repo, number, &body)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 			}
 		}
 
