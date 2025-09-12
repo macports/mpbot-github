@@ -116,7 +116,7 @@ func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 		if receiver.production {
 			mentionSymbol = "@"
 		}
-		if len(handles) > 0 && !strings.Contains(*event.PullRequest.Body, "[skip notification]") {
+		if len(handles) > 0 && (event.PullRequest.Body == nil || !strings.Contains(*event.PullRequest.Body, "[skip notification]")) {
 			body := "Notifying maintainers:\n"
 			for handle, ports := range handles {
 				body += mentionSymbol + handle + " for port " + strings.Join(ports, ", ") + ".\n"
@@ -177,13 +177,15 @@ func (receiver *Receiver) processPullRequest(event *github.PullRequestEvent) {
 		if strings.Contains(strings.ToLower(*event.PullRequest.Title), ": update") || strings.HasPrefix(strings.ToLower(*event.PullRequest.Title), "update") {
 			typeLabels = appendIfUnique(typeLabels, "type: update")
 		}
-		if cveRegexp.FindString(*event.PullRequest.Title) != "" || cveRegexp.FindString(*event.PullRequest.Body) != "" {
+		if cveRegexp.FindString(*event.PullRequest.Title) != "" || (event.PullRequest.Body != nil && cveRegexp.FindString(*event.PullRequest.Body) != "") {
 			typeLabels = appendIfUnique(typeLabels, "type: security fix")
 		}
-		typesFromBody := []string{"bugfix", "enhancement", "security fix", "update"}
-		for _, t := range typesFromBody {
-			if strings.Contains(*event.PullRequest.Body, "[x] "+t) {
-				typeLabels = appendIfUnique(typeLabels, "type: "+t)
+		if event.PullRequest.Body != nil {
+			typesFromBody := []string{"bugfix", "enhancement", "security fix", "update"}
+			for _, t := range typesFromBody {
+				if strings.Contains(*event.PullRequest.Body, "[x] "+t) {
+					typeLabels = appendIfUnique(typeLabels, "type: "+t)
+				}
 			}
 		}
 

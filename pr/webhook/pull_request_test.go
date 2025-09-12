@@ -22,9 +22,13 @@ type PullRequestEventTest struct {
 	number  int
 	sender  string
 	title   string
-	body    string
+	body    *string
 	comment string
 	labels  []string
+}
+
+func addrof(s string) *string {
+	return &s;
 }
 
 func TestHandlePullRequest(t *testing.T) {
@@ -61,13 +65,13 @@ func TestHandlePullRequest(t *testing.T) {
   }
 }`), &event)
 	prTests := []*PullRequestEventTest{
-		{number: 1, sender: "l2dy", title: "z: update to 1.1", labels: []string{"maintainer: none", "type: update", "by: member"}},
-		{number: 1, sender: "jverne", title: "z: update to 1.1", body: "[x] enhancement", labels: []string{"maintainer: none", "type: update", "type: enhancement"}},
-		{number: 1, sender: "jverne", title: "z: update to 1.1", body: "Fixes CVE-0000-0.", labels: []string{"maintainer: none", "type: update", "type: security fix"}},
+		{number: 1, sender: "l2dy", title: "z: update to 1.1", body: nil, labels: []string{"maintainer: none", "type: update", "by: member"}},
+		{number: 1, sender: "jverne", title: "z: update to 1.1", body: addrof("[x] enhancement"), labels: []string{"maintainer: none", "type: update", "type: enhancement"}},
+		{number: 1, sender: "jverne", title: "z: update to 1.1", body: addrof("Fixes CVE-0000-0."), labels: []string{"maintainer: none", "type: update", "type: security fix"}},
 		{number: 2, sender: "jverne", title: "upx-devel: new port", labels: []string{"type: submission"}},
 		{number: 3, sender: "l2dy", title: "upx: update to 1.1", labels: []string{"maintainer", "maintainer: open", "type: update", "by: member"}},
 		{number: 3, sender: "jverne", title: "upx: update to 1.1", comment: "Notifying maintainers:\n@_l2dy for port upx.\n", labels: []string{"maintainer: open", "type: update"}},
-		{number: 3, sender: "jverne", title: "upx: update to 1.1", body: "<!-- [skip notification] -->", labels: []string{"maintainer: open", "type: update"}},
+		{number: 3, sender: "jverne", title: "upx: update to 1.1", body: addrof("<!-- [skip notification] -->"), labels: []string{"maintainer: open", "type: update"}},
 	}
 	for _, prt := range prTests {
 		stubClient.newComment = ""
@@ -75,7 +79,7 @@ func TestHandlePullRequest(t *testing.T) {
 		event.Number = &prt.number
 		event.Sender.Login = &prt.sender
 		event.PullRequest.Title = &prt.title
-		event.PullRequest.Body = &prt.body
+		event.PullRequest.Body = prt.body
 		eventBody, err := json.Marshal(event)
 		if err != nil {
 			t.Error(err)
