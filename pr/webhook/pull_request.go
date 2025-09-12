@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -15,7 +16,7 @@ var cveRegexp = regexp.MustCompile(`CVE-\d{4}-\d+`)
 func (receiver *Receiver) handlePullRequest(body []byte) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(r)
+			log.Printf("PR processing failed: %s\n%s", r, debug.Stack())
 		}
 
 		if !receiver.testing {
